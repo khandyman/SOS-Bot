@@ -1,2 +1,2 @@
-# Sos-Bot
+# SOS-Bot
 A Discord bot character database for Seekers of Souls on Project Quarm
