@@ -2,48 +2,65 @@
 import os
 
 import discord
-import random
 from dotenv import load_dotenv
-from redbot.core import commands, app_commands
 
 load_dotenv()
 
 TOKEN = os.getenv('DISCORD_TOKEN')
 GUILD = os.getenv('DISCORD_GUILD')
 
-intents = discord.Intents.default()
-intents.message_content = True
-
-client = discord.Client(intents=intents)
+bot = discord.Bot()
 
 
-@client.event
+@bot.event
 async def on_ready():
-    guild = discord.utils.get(client.guilds, name=GUILD)
-
-    # for guild in client.guilds:
-    #     if guild.name == GUILD:
-    #         break
+    guild = discord.utils.get(bot.guilds, name=GUILD)
 
     print(
-        f'{client.user} has connected to the following guild:\n'
+        f'{bot.user} has connected to the following guild:\n'
         f'{guild.name} (id: {guild.id})'
     )
 
-    # members = '\n - '.join([member.name for member in guild.members])
-    # print(f'Guild Members:\n - {members}')
+
+@bot.slash_command(name="lookup_characters_eq",
+                   description="Find a user's characters by their EQ name")
+async def lookup_characters_eq(ctx: discord.ApplicationContext, char_name: str):
+    await ctx.respond(f"You entered: {char_name}", ephemeral=True)
 
 
-@app_commands.command()
-async def on_message(message):
-    if message.author == client.user:
-        return
+@bot.slash_command(name="lookup_characters_discord",
+                   description="Find a user's characters by their Discord id")
+async def lookup_characters_eq(ctx: discord.ApplicationContext, discord_id: str):
+    await ctx.respond(f"You entered: {discord_id}", ephemeral=True)
 
-    random_officers = ['Twin', 'Luna', 'Toryn', 'Kleo', 'Punk', 'Dark', 'Raf', 'Steel', 'Math']
 
-    if message.content == 'coolest!':
-        response = random.choice(random_officers)
-        # await message.channel.send(response)
-        await interaction.response.send_message(response, ephemeral=True)
+@bot.slash_command(name="get_all_mains", description="Get a list of all mains")
+async def get_all_mains(ctx: discord.ApplicationContext):
+    await ctx.respond("This is a big list!", ephemeral=True)
 
-client.run(TOKEN)
+
+@bot.slash_command(name="find_discord_users_main", description="Find a user's main character")
+async def find_discord_users_main(ctx: discord.ApplicationContext, discord_id: str):
+    await ctx.respond(f"{discord_id}'s main character is: ", ephemeral=True)
+
+
+@bot.slash_command(name="add_character", description="Add a new character")
+async def add_character(ctx: discord.ApplicationContext,
+                        discord_id: str, char_name: str, eq_race: str, eq_class: str, char_type: str):
+    await ctx.respond(f"You are entering: "
+                      f"{discord_id} | {char_name} | {eq_race} | {eq_class} | {char_type}",
+                      ephemeral=True)
+
+
+@bot.slash_command(name="edit_character", description="Edit an existing character")
+async def edit_character(ctx: discord.ApplicationContext,
+                         char_name: str, eq_race: str, eq_class: str, char_type: str):
+    await ctx.respond(f"You are updating: {char_name} | {eq_race} | {eq_class} | {char_type}", ephemeral=True)
+
+
+@bot.slash_command(name="delete_character", description="Delete a character")
+async def delete_character(ctx: discord.ApplicationContext, char_name: str):
+    await ctx.respond(f"You are deleting: {char_name}", ephemeral=True)
+
+
+bot.run(TOKEN)
