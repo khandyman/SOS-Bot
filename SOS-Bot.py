@@ -10,7 +10,8 @@ load_dotenv()
 
 TOKEN = os.getenv('DISCORD_TOKEN')
 GUILD = os.getenv('DISCORD_GUILD')
-members = []
+discord_ids = []
+nicknames = []
 
 intents = discord.Intents.all()
 bot = discord.Bot(intents=intents)
@@ -18,16 +19,19 @@ bot = discord.Bot(intents=intents)
 
 @bot.event
 async def on_ready():
-    global members
+    global discord_ids, nicknames
     guild = discord.utils.get(bot.guilds, name=GUILD)
 
     for member in guild.members:
-        if member.nick is None:
-            members.append(member.name)
-        else:
-            members.append(member.nick)
+        discord_ids.append(member.name)
 
-    members.sort(key=lambda s: s.lower())
+        if member.nick is None:
+            nicknames.append(member.name)
+        else:
+            nicknames.append(member.nick)
+
+    discord_ids.sort(key=lambda s: s.lower())
+    nicknames.sort(key=lambda s: s.lower())
 
     print(
         f'{bot.user} has connected to the following guild:\n'
@@ -53,30 +57,11 @@ async def lookup_characters_eq(ctx: discord.ApplicationContext, char_name: str):
 
 @bot.slash_command(name="lookup_characters_discord",
                    description="Find a user's characters by their Discord id")
-async def lookup_characters_discord(ctx: discord.ApplicationContext, discord_id: str):
-    discord_ids = Select(placeholder="Select a Discord id")
-
-    class MyView(View):
-        def __init__(self, options1, options2):
-            super().__init__()
-
-            self.select1 = Select(options=options1)
-            self.select2 = Select(options=options2)
-            self.add_item(self.select1)
-            self.add_item(self.select2)
-
-    options1 = [discord.SelectOption(label=f"Option {i}") for i in range(1, 26)]
-    options2 = [discord.SelectOption(label=f"Option {i}") for i in range(26, 51)]
-
-    view = MyView(options1, options2)
-
-    await ctx.send("Select an option:", view=view)
-
-    # for member in members:
-    #     print(member)
-    #     discord_ids.add_option(label=member)
-
-    # await ctx.respond(f"You entered: {discord_id}", ephemeral=True)
+async def lookup_characters_discord(
+        ctx: discord.ApplicationContext,
+        discord_id: discord.Option(str, autocomplete=discord.utils.basic_autocomplete(discord_ids))
+):
+    await ctx.respond(f'You selected `{discord_id}`!', ephemeral=True)
 
 
 @bot.slash_command(name="get_all_mains", description="Get a list of all mains")
@@ -85,38 +70,70 @@ async def get_all_mains(ctx: discord.ApplicationContext):
 
 
 @bot.slash_command(name="find_discord_users_main", description="Find a user's main character")
-async def find_discord_users_main(ctx: discord.ApplicationContext, discord_id: str):
-    await ctx.respond(f"{discord_id}'s main character is: ", ephemeral=True)
+async def find_discord_users_main(
+        ctx: discord.ApplicationContext,
+        discord_id: discord.Option(str, autocomplete=discord.utils.basic_autocomplete(discord_ids))
+):
+    await ctx.respond(f'You selected `{discord_id}`!', ephemeral=True)
 
 
-# @bot.slash_command(name="add_character", description="Add a new character")
-# async def add_character(ctx: discord.ApplicationContext, discord_id: str, char_name: str, eq_race: str,
-#                         eq_class: str, char_type: str):
-#     await ctx.respond(f"You are entering: "
-#                       f"{discord_id} | {char_name} | {eq_race} | {eq_class} | {char_type}",
-#                       ephemeral=True)
+@bot.slash_command()
+async def add_character(
+        ctx: discord.ApplicationContext,
+        discord_id: discord.Option(str, autocomplete=discord.utils.basic_autocomplete(discord_ids)),
+        char_name: str,
+        char_race: discord.Option(
+            str,
+            choices=[
+                'Barbarian',
+                'Dark Elf',
+                'Dwarf',
+                'Erudite',
+                'Gnome',
+                'Half Elf',
+                'Halfling',
+                'High Elf',
+                'Human',
+                'Iksar',
+                'Ogre',
+                'Troll',
+                'Wood Elf'
+            ]
+        ),
+        char_class: discord.Option(
+            str,
+            choices=[
+                'Bard',
+                'Beastlord',
+                'Cleric',
+                'Druid',
+                'Enchanter',
+                'Magician',
+                'Monk',
+                'Necromancer',
+                'Paladin',
+                'Ranger',
+                'Rogue',
+                'Shadow Knight',
+                'Shaman',
+                'Warrior',
+                'Wizard'
+            ]
+        ),
+        char_type: discord.Option(
+            str,
+            choices=[
+                'Main',
+                'Alt',
+                'Mule'
+            ]
+        )
+):
 
-@bot.command()
-async def add_character(ctx):
-    # char_race = Select(placeholder="Choose a race")
-
-    # for member in members:
-        # char_race.add_option(label=member)
-        # print(member)
-
-    char_class = Select(
-        placeholder="Choose a class",
-        options=[
-            discord.SelectOption(label="Bard"),
-            discord.SelectOption(label="Cleric")
-        ]
+    await ctx.respond(
+        f'You entered: {discord_id} | {char_name} | {char_race} | {char_class} | {char_type}',
+        ephemeral=True
     )
-
-    view = View()
-    # view.add_item(char_race)
-    view.add_item(char_class)
-
-    await ctx.respond(view=view, ephemeral=True)
 
 
 @bot.slash_command(name="edit_character", description="Edit an existing character")
@@ -130,4 +147,3 @@ async def delete_character(ctx: discord.ApplicationContext, char_name: str):
 
 
 bot.run(TOKEN)
-
