@@ -29,12 +29,23 @@ class Database:
 
         return records_list
 
-    def insert_user(self, usr, pwd):
-        pwd = str(generate_password_hash(pwd))
-
-        query = f"INSERT INTO users (user_name, user_password) values ('{usr}', '{pwd}')"
-
+    def insert_character(self, sql_string):
         with self._engine.connect() as conn:
-            result = conn.execute(text(query))
+            result = conn.execute(text(sql_string))
+            conn.commit()
+
+        return result
+
+    def update_character(self, sql_string):
+        with self._engine.connect() as conn:
+            result = conn.execute(text(sql_string))
+            conn.commit()
+
+        return result
+
+    def delete_character(self, sql_string):
+        with self._engine.connect() as conn:
+            result = conn.execute(text(sql_string))
+            conn.commit()
 
         return result
