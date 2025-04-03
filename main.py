@@ -2,8 +2,7 @@
 import os
 
 import discord  # actually using py-cord instead of discord.py
-# from discord.ext import commands
-from discord.ui import Select, View
+from database import Database
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -15,6 +14,7 @@ nicknames = []
 
 intents = discord.Intents.all()
 bot = discord.Bot(intents=intents)
+db = Database()
 
 
 @bot.event
@@ -52,7 +52,11 @@ async def sync(ctx: discord.ApplicationContext):
 @bot.slash_command(name="lookup_characters_eq",
                    description="Find a user's characters by their EQ name")
 async def lookup_characters_eq(ctx: discord.ApplicationContext, char_name: str):
-    await ctx.respond(f"You entered: {char_name}", ephemeral=True)
+    query = (f"SELECT b.char_name, b.char_race, b.char_class, b.char_type, b.is_officer FROM sos_bot.characters a"
+             f" JOIN sos_bot.characters b ON a.discord_id = b.discord_id WHERE a.char_name = '{char_name}'")
+    results = db.retrieve_records(query)
+
+    await ctx.respond(f"{results}", ephemeral=True)
 
 
 @bot.slash_command(name="lookup_characters_discord",
