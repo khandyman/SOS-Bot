@@ -5,6 +5,7 @@ import discord  # actually using py-cord instead of discord.py
 from database import Database
 from dotenv import load_dotenv
 from prettytable import PrettyTable
+import pymysql
 
 load_dotenv()
 
@@ -117,15 +118,14 @@ async def sync(ctx: discord.ApplicationContext):
 @bot.slash_command(name="lookup_characters_eq",
                    description="Find a user's characters by their EQ name")
 async def lookup_characters_eq(ctx: discord.ApplicationContext, char_name: str):
-    query = (
-        "SELECT b.char_name, b.char_race, b.char_class, b.char_type, b.char_priority FROM sos_bot.characters a"
-        f" JOIN sos_bot.characters b ON a.discord_id = b.discord_id WHERE a.char_name = '{char_name}'"
-        "ORDER BY b.char_priority ASC"
-    )
-    results = db.retrieve_records(query)
+    results = db.lookup_eq(char_name)
+    discord_name = get_discord_name(char_name)
 
     if len(results) > 0:
-        await ctx.respond(f"```{format_message(results)}```", ephemeral=True)
+        await ctx.respond(
+            f"```List of characters for: {discord_name}"
+            f"\n{format_message(results)}```",
+            ephemeral=True)
     else:
         await ctx.respond(f"```No records found for {char_name}.\nPlease try again.```", ephemeral=True)
 
@@ -139,43 +139,36 @@ async def lookup_characters_discord(
     discord_id = get_discord_id(discord_name)
 
     if discord_id != "":
-        query = (
-            "SELECT char_name, char_race, char_class, char_type, char_priority FROM sos_bot.characters"
-            f" WHERE discord_id = '{discord_id}' ORDER BY char_priority ASC"
-        )
-        results = db.retrieve_records(query)
+        results = db.lookup_discord(discord_id)
 
         await ctx.respond(f"```{format_message(results)}```", ephemeral=True)
     else:
         await ctx.respond(f"```Discord ID not found for {discord_name}.\nUnable to query database.```", ephemeral=True)
 
 
-# @bot.slash_command(name="get_all_mains", description="Get a list of all mains")
-# async def get_all_mains(ctx: discord.ApplicationContext):
-#     query = (
-#         "SELECT char_name FROM sos_bot.characters WHERE char_type = 'Main' ORDER BY char_name"
-#     )
-#     results = db.retrieve_records(query)
-#
-#     await ctx.respond(f"```{results}```", ephemeral=True)
+@bot.slash_command(name="get_all_mains", description="Get a list of all mains")
+async def get_all_mains(ctx: discord.ApplicationContext):
+    results = db.get_all_mains()
+    main_list = "Main characters in Seekers Of Souls:\n"
+
+    for result in results:
+        main_list = main_list + f"{result}\n"
+
+    await ctx.respond(f"```{main_list}```", ephemeral=True)
 
 
-@bot.slash_command(name="find_discord_users_main", description="Find a user's main character")
-async def find_discord_users_main(
+@bot.slash_command(name="find_main_from_discord", description="Find a user's main character")
+async def find_main_from_discord(
         ctx: discord.ApplicationContext,
         discord_name: discord.Option(str, autocomplete=discord.utils.basic_autocomplete(names))
 ):
     discord_id = get_discord_id(discord_name)
 
     if discord_id != "":
-        query = (
-            "SELECT char_name from sos_bot.characters WHERE "
-            f" discord_id = {discord_id} AND char_type = 'Main'"
-        )
-        results = db.retrieve_records(query)
+        results = db.lookup_main(discord_id)
 
         if len(results) > 0:
-            await ctx.respond(f'```{results[0]['char_name']}```', ephemeral=True)
+            await ctx.respond(f'```{discord_name} = {results[0]['char_name']}```', ephemeral=True)
         else:
             await ctx.respond(f'```No records found for {discord_name}.```', ephemeral=True)
     else:
@@ -204,50 +197,56 @@ async def add_character(
         else:
             char_priority = 2
 
-        query = (
-            "INSERT INTO sos_bot.characters" 
-            "(discord_id, char_name, char_race, char_class, char_type, is_officer, char_priority)"
-            f" VALUES ('{discord_id}', '{char_name}', '{char_race}', '{char_class}', '{char_type}', 0, {char_priority})"
-        )
-        results = db.insert_character(query)
+        try:
+            results = db.insert_character(discord_id, char_name, char_race,
+                                          char_class, char_type, char_priority)
+            row = get_row(results)
 
-        await ctx.respond(
-            f'```You entered: {discord_id} | {char_name} | {char_race} | {char_class} | {char_type}```',
-            ephemeral=True
-        )
+            await ctx.respond(
+                f"```You entered: {discord_name} | {char_name} | {char_race} | {char_class} | {char_type}"
+                f"\n{results} {row} added to database.```",
+                ephemeral=True
+            )
+        except Exception as err:
+            if "Duplicate entry" in str(err):
+                await ctx.respond(
+                    f"{char_name} already exists in the database.", ephemeral=True
+                )
+            else:
+                await ctx.respond(
+                    f"```An error has occurred: {err}.```", ephemeral=True
+                )
 
 
 @bot.slash_command(name="edit_character", description="Edit an existing character")
 async def edit_character(
         ctx: discord.ApplicationContext,
         char_name: str,
+        new_name: discord.Option(str, required=False),
         char_race: get_races(),
         char_class: get_classes(),
         char_type: get_types()
 ):
-    query = f"UPDATE sos_bot.characters SET char_name = '{char_name}'"
+    results = db.update_character(char_name, new_name, char_race, char_class, char_type)
+    row = get_row(results)
 
-    if char_race is not None:
-        query = query + f", char_race = '{char_race}'"
-
-    if char_class is not None:
-        query = query + f", char_class = '{char_class}'"
-
-    if char_type is not None:
-        query = query + f", char_type = '{char_type}'"
-
-    query = query + f" WHERE char_name = '{char_name}'"
-    print(query)
-
-    await ctx.respond(f"```You are updating: {char_name} | {char_race} | {char_class} | {char_type}```", ephemeral=True)
+    await ctx.respond(
+        f"```You entered: {char_name} | {new_name} | {char_race} | {char_class} | {char_type}."
+        f"\n{results} {row} updated in database.```",
+        ephemeral=True
+    )
 
 
 @bot.slash_command(name="delete_character", description="Delete a character")
 async def delete_character(ctx: discord.ApplicationContext, char_name: str):
-    query = f"DELETE FROM sos_bot.characters WHERE char_name = '{char_name}'"
-    results = db.insert_character(query)
+    results = db.delete_character(char_name)
+    row = get_row(results)
 
-    await ctx.respond(f"```Successfully deleted: {char_name}```", ephemeral=True)
+    await ctx.respond(
+        f"```You deleted: {char_name}."
+        f"\n{results} {row} deleted from database.```",
+        ephemeral=True
+    )
 
 
 def format_message(results):
@@ -273,6 +272,30 @@ def get_discord_id(discord_name):
             discord_id = member.id
 
     return discord_id
+
+
+def get_discord_name(char_name):
+    discord_name = ""
+
+    discord_id = db.lookup_discord_id(char_name)
+
+    if len(discord_id) > 0:
+        discord_id = discord_id[0]['discord_id']
+
+    for member in get_guild().members:
+        if discord_id == str(member.id):
+            discord_name = member.name
+
+    return discord_name
+
+
+def get_row(results):
+    if results == 1:
+        row = "row"
+    else:
+        row = "rows"
+
+    return row
 
 
 bot.run(TOKEN)
