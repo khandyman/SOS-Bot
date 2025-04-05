@@ -114,11 +114,15 @@ class Database:
                 row_to_dict = row._asdict()
                 records_list.append(row_to_dict)
 
+            conn.close()
+
         return records_list
 
     def execute_update(self, query):
         with self._engine.connect() as conn:
             result = conn.execute(text(query)).rowcount
             conn.commit()
+
+            conn.close()
 
         return result
