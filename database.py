@@ -17,6 +17,14 @@ class Database:
 
         self._engine = create_engine(self._params)
 
+    def get_discord_ids(self):
+        query = (
+            ("SELECT discord_id, char_name FROM sos_bot.characters "
+             "WHERE char_type = 'Main' ORDER BY char_name")
+        )
+
+        return self.execute_read(query)
+
     def lookup_eq(self, char_name):
         query = (
             "SELECT b.char_name, b.char_race, b.char_class, b.char_type, b.char_priority FROM sos_bot.characters a"

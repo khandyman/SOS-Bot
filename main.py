@@ -52,6 +52,7 @@ async def on_ready():
     )
 
     keep_alive.start()
+    # find_discrepancies(guild)
 
 
 @loop(count=None)
@@ -65,6 +66,31 @@ async def keep_alive():
     db.get_all_mains()
     print("Keeping MySQL connection alive.")
     await asyncio.sleep(600)
+
+
+def find_discrepancies(guild):
+    characters = db.get_discord_ids()
+    discrepancies = []
+    current_char = {}
+    found = False
+
+    for char_dict in characters:
+        for member in guild.members:
+            if str(char_dict['discord_id']) == str(member.id):
+                found = True
+                break
+
+        if found is False:
+            current_char = {
+                "discord_id": char_dict['discord_id'],
+                "char_name": char_dict['char_name']
+            }
+            discrepancies.append(current_char)
+
+        found = False
+
+    for item in discrepancies:
+        print(item)
 
 
 @bot.slash_command(name="lookup_characters_everquest",
