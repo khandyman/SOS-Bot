@@ -209,6 +209,7 @@ async def add_character(
                         f"{char_name} already exists in the database.", ephemeral=True
                     )
                 else:
+                    helper.log_activity(ctx.author, ctx.command, str(err))
                     await ctx.respond(
                         f"```An error has occurred: {err}.```", ephemeral=True
                     )
