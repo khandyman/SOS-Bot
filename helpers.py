@@ -44,14 +44,17 @@ class Helpers:
 
     @staticmethod
     def log_activity(user, command, entries):
-        log_string = f"{datetime.datetime.now()} - {user} - {command} - ["
+        log_string = f"{datetime.datetime.now()} - {user} - {command}"
 
-        for entry in entries:
-            entry_value = f"{entry['name']}: {entry['value']} | "
-            log_string = log_string + entry_value
+        if entries is not None:
+            log_string = log_string + " - ["
+            for entry in entries:
+                entry_value = f"{entry['name']}: {entry['value']} | "
+                log_string = log_string + entry_value
 
-        log_string = log_string[0:len(log_string) - 3]
-        log_string = log_string + "]\n"
+            log_string = log_string[0:len(log_string) - 3]
+            log_string = log_string + "]\n"
+
         file_path = "logs//bot-log.txt"
 
         print(log_string)
