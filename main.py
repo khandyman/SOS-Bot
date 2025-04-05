@@ -71,7 +71,6 @@ async def keep_alive():
 def find_discrepancies(guild):
     characters = db.get_discord_ids()
     discrepancies = []
-    current_char = {}
     found = False
 
     for char_dict in characters:
@@ -124,6 +123,7 @@ async def lookup_characters_everquest(ctx: discord.ApplicationContext, char_name
             f"Please try again.```",
             ephemeral=True
         )
+        return
 
     # if matches found display discord id,
     # then print table of character results
