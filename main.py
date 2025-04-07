@@ -15,8 +15,7 @@ load_dotenv()  # sets up environment variables, stored locally in .env
 
 TOKEN = os.getenv('DISCORD_TOKEN')  # bot token
 GUILD = os.getenv('DISCORD_GUILD')  # target guild
-names = []  # list of Discord names
-nicks = []  # list of Discord nicknames
+discord_names = []  # list of Discord names
 
 # give bot access to all Discord intents and
 # instantiate database and helper classes
@@ -34,24 +33,14 @@ async def on_ready():
     and starts keep alive routine
     :return: none
     """
-    global names, nicks
+    global discord_names
     guild = helper.get_guild()
 
     for member in guild.members:
-        names.append(member.name)
-
-        if member.nick is None:
-            nicks.append(member.name)
-        else:
-            nicks.append(member.nick)
+        discord_names.append(member.display_name)
 
     # fancy looking, but just sorts both lists case insensitively
-    names.sort(key=lambda s: s.lower())
-    nicks.sort(key=lambda s: s.lower())
-
-    # test = db.get_all_characters()
-    # for char in test:
-    #     print(char)
+    discord_names.sort(key=lambda s: s.lower())
 
     print(
         f'{bot.user} has connected to the following guild:\n'
@@ -153,7 +142,7 @@ async def lookup_characters_discord(
         ctx: discord.ApplicationContext,
         discord_name: discord.Option(
             str,
-            autocomplete=discord.utils.basic_autocomplete(nicks)
+            autocomplete=discord.utils.basic_autocomplete(discord_names)
         )
 ):
     """
@@ -201,7 +190,7 @@ async def find_main_from_discord(
         ctx: discord.ApplicationContext,
         discord_name: discord.Option(
             str,
-            autocomplete=discord.utils.basic_autocomplete(nicks)
+            autocomplete=discord.utils.basic_autocomplete(discord_names)
         )
 ):
     """
@@ -283,7 +272,7 @@ async def add_character(
         ctx: discord.ApplicationContext,
         discord_name: discord.Option(
             str,
-            autocomplete=discord.utils.basic_autocomplete(nicks)
+            autocomplete=discord.utils.basic_autocomplete(discord_names)
         ),
         char_name: str,
         char_race: helper.get_races(),
@@ -357,6 +346,7 @@ async def add_character(
         # trim trailing pipe symbol and whitespace
         message = message[0:len(message) - 3]
 
+        await bot.sync_commands(guild_ids=[helper.get_guild().id])
         await ctx.respond(
             f"```{message}) entered."
             f"\n{results} {row} added to database.```",
@@ -446,6 +436,7 @@ async def edit_character(
     else:
         message = f"{char_name} not found"
 
+    await bot.sync_commands(guild_ids=[helper.get_guild().id])
     await ctx.respond(
         f"```{message}."
         f"\n{results} {row} updated in database.```",
@@ -488,6 +479,7 @@ async def delete_character(
     else:
         message = f"{char_name} not found"
 
+    await bot.sync_commands(guild_ids=[helper.get_guild().id])
     await ctx.respond(
         f"```{message}."
         f"\n{results} {row} deleted from database.```",
