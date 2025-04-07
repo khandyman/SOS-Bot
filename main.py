@@ -1,8 +1,11 @@
 # bot.py
 import os
+import typing
 
 import discord  # actually using py-cord instead of discord.py
 from discord.ext.tasks import loop
+from discord.ext import commands
+from discord import application_command
 from database import Database
 from helpers import Helpers
 from dotenv import load_dotenv
@@ -45,6 +48,10 @@ async def on_ready():
     # fancy looking, but just sorts both lists case insensitively
     names.sort(key=lambda s: s.lower())
     nicks.sort(key=lambda s: s.lower())
+
+    # test = db.get_all_characters()
+    # for char in test:
+    #     print(char)
 
     print(
         f'{bot.user} has connected to the following guild:\n'
@@ -94,7 +101,13 @@ def find_discrepancies(guild):
 
 @bot.slash_command(name="lookup_characters_everquest",
                    description="Find a user's characters by their EQ name")
-async def lookup_characters_everquest(ctx: discord.ApplicationContext, char_name: str):
+async def lookup_characters_everquest(
+        ctx: discord.ApplicationContext,
+        char_name: discord.Option(
+            str,
+            autocomplete=discord.utils.basic_autocomplete(db.get_all_characters())
+        )
+):
     """
     find all characters associated with a
     given eq character name
@@ -138,7 +151,10 @@ async def lookup_characters_everquest(ctx: discord.ApplicationContext, char_name
                    description="Find a user's characters by their Discord id")
 async def lookup_characters_discord(
         ctx: discord.ApplicationContext,
-        discord_name: discord.Option(str, autocomplete=discord.utils.basic_autocomplete(names))
+        discord_name: discord.Option(
+            str,
+            autocomplete=discord.utils.basic_autocomplete(nicks)
+        )
 ):
     """
     find all characters associated with a
@@ -183,7 +199,10 @@ async def lookup_characters_discord(
 @bot.slash_command(name="find_main_from_discord", description="Find a user's main character")
 async def find_main_from_discord(
         ctx: discord.ApplicationContext,
-        discord_name: discord.Option(str, autocomplete=discord.utils.basic_autocomplete(names))
+        discord_name: discord.Option(
+            str,
+            autocomplete=discord.utils.basic_autocomplete(nicks)
+        )
 ):
     """
 
@@ -262,7 +281,10 @@ async def get_all_mains(ctx: discord.ApplicationContext):
 @bot.slash_command(name="add_character", description="Add a character to the database")
 async def add_character(
         ctx: discord.ApplicationContext,
-        discord_name: discord.Option(str, autocomplete=discord.utils.basic_autocomplete(names)),
+        discord_name: discord.Option(
+            str,
+            autocomplete=discord.utils.basic_autocomplete(names)
+        ),
         char_name: str,
         char_race: helper.get_races(),
         char_class: helper.get_classes(),

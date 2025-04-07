@@ -63,13 +63,14 @@ class Database:
             "SELECT char_name FROM sos_bot.characters WHERE char_type = 'Main' ORDER BY char_name"
         )
 
-        results = self.execute_read(query)
-        results_list = []
+        return self.get_list(self.execute_read(query), 'char_name')
 
-        for result in results:
-            results_list.append(result['char_name'])
+    def get_all_characters(self):
+        query = (
+            "SELECT char_name FROM sos_bot.characters"
+        )
 
-        return results_list
+        return self.get_list(self.execute_read(query), 'char_name')
 
     def insert_character(self, discord_id, char_name, char_race, char_class, char_type, char_priority):
         query = (
@@ -134,3 +135,11 @@ class Database:
             conn.close()
 
         return result
+
+    def get_list(self, results, field):
+        results_list = []
+
+        for result in results:
+            results_list.append(result[field])
+
+        return results_list
