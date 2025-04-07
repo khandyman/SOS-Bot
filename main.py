@@ -283,7 +283,7 @@ async def add_character(
         ctx: discord.ApplicationContext,
         discord_name: discord.Option(
             str,
-            autocomplete=discord.utils.basic_autocomplete(names)
+            autocomplete=discord.utils.basic_autocomplete(nicks)
         ),
         char_name: str,
         char_race: helper.get_races(),
@@ -379,7 +379,10 @@ async def add_character(
 @bot.slash_command(name="edit_character", description="Edit an existing character")
 async def edit_character(
         ctx: discord.ApplicationContext,
-        char_name: str,
+        char_name: discord.Option(
+            str,
+            autocomplete=discord.utils.basic_autocomplete(db.get_all_characters())
+        ),
         new_name: discord.Option(str, required=False),
         char_race: helper.get_races(),
         char_class: helper.get_classes(),
@@ -451,7 +454,13 @@ async def edit_character(
 
 
 @bot.slash_command(name="delete_character", description="Delete a character")
-async def delete_character(ctx: discord.ApplicationContext, char_name: str):
+async def delete_character(
+        ctx: discord.ApplicationContext,
+        char_name: discord.Option(
+            str,
+            autocomplete=discord.utils.basic_autocomplete(db.get_all_characters())
+        )
+):
     """
     delete a character from the database
     :param ctx: the application context of the bot
