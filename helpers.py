@@ -69,7 +69,7 @@ class Helpers:
         discord_id = ""
 
         for member in self.get_guild().members:
-            if discord_name == member.nick or discord_name == member.name:
+            if discord_name == member.display_name:
                 discord_id = member.id
 
         return discord_id
@@ -84,7 +84,7 @@ class Helpers:
 
         for member in self.get_guild().members:
             if discord_id == str(member.id):
-                discord_name = member.name
+                discord_name = member.display_name
 
         return discord_name
 
