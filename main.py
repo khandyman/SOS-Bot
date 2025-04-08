@@ -88,20 +88,29 @@ def find_discrepancies(guild):
         print(item)
 
 
+async def char_name_autocompletion(
+        ctx: discord.AutocompleteContext,
+):
+    current_value = ctx.value
+    char_list = db.get_all_characters()
+
+    return [choice for choice in char_list if current_value.lower() in choice.lower()]
+    
+
 @bot.slash_command(name="lookup_characters_everquest",
                    description="Find a user's characters by their EQ name")
 async def lookup_characters_everquest(
         ctx: discord.ApplicationContext,
         char_name: discord.Option(
             str,
-            autocomplete=discord.utils.basic_autocomplete(db.get_all_characters())
+            autocomplete=char_name_autocompletion
         )
 ):
     """
     find all characters associated with a
     given eq character name
     :param ctx: the application context of the bot
-    :param char_name: string entered by user (required)
+    :param char_name: string selected by user (required)
     :return: none
     """
     # # this slash command available to all users
@@ -371,7 +380,7 @@ async def edit_character(
         ctx: discord.ApplicationContext,
         char_name: discord.Option(
             str,
-            autocomplete=discord.utils.basic_autocomplete(db.get_all_characters())
+            autocomplete=char_name_autocompletion
         ),
         new_name: discord.Option(str, required=False),
         char_race: helper.get_races(),
@@ -449,7 +458,7 @@ async def delete_character(
         ctx: discord.ApplicationContext,
         char_name: discord.Option(
             str,
-            autocomplete=discord.utils.basic_autocomplete(db.get_all_characters())
+            autocomplete=char_name_autocompletion
         )
 ):
     """
