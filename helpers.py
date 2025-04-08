@@ -88,6 +88,20 @@ class Helpers:
 
         return discord_name
 
+    def get_combined_names(self, database_names):
+        combined_names_list = []
+
+        for guild_member in database_names:
+            for discord_member in self.get_guild().members:
+                if str(guild_member['discord_id']) == str(discord_member.id):
+                    char_name = guild_member['char_name']
+                    discord_name = discord_member.name
+                    # display_name = discord_member.display_name
+                    combined_names_list.append(f"[ {char_name} ]" + " " * 4 + f"[ {discord_name} ]")
+                    break
+
+        return combined_names_list
+
     def get_row(self, results):
         if results == 1:
             row = "row"

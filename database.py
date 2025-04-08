@@ -67,10 +67,13 @@ class Database:
 
     def get_all_characters(self):
         query = (
-            "SELECT char_name FROM sos_bot.characters"
+            "SELECT discord_id, char_name FROM sos_bot.characters"
         )
 
-        return self.get_list(self.execute_read(query), 'char_name')
+        return self.execute_read(query)
+
+    def get_all_char_names(self):
+        return self.get_list(self.get_all_characters(), 'char_name')
 
     def insert_character(self, discord_id, char_name, char_race, char_class, char_type, char_priority):
         query = (

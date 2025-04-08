@@ -1,6 +1,7 @@
 # bot.py
 import os
 import typing
+from random import choice
 
 import discord  # actually using py-cord instead of discord.py
 from discord.ext.tasks import loop
@@ -47,6 +48,7 @@ async def on_ready():
         f'{guild.name} (id: {guild.id})'
     )
 
+    await bot.sync_commands(guild_ids=discord.utils.get(bot.guilds, name=guild), force=True)
     keep_alive.start()
     # find_discrepancies(guild)
 
@@ -89,28 +91,39 @@ def find_discrepancies(guild):
 
 
 async def char_name_autocompletion(
-        ctx: discord.AutocompleteContext,
+        ctx: discord.AutocompleteContext
 ):
     current_value = ctx.value
-    char_list = db.get_all_characters()
+    char_list = db.get_all_char_names()
 
     return [choice for choice in char_list if current_value.lower() in choice.lower()]
-    
 
-@bot.slash_command(name="lookup_characters_everquest",
-                   description="Find a user's characters by their EQ name")
-async def lookup_characters_everquest(
+
+async def combined_name_autocompletion(
+        ctx: discord.AutocompleteContext
+):
+    current_value = ctx.value
+    name_list = helper.get_combined_names(db.get_all_characters())
+    name_list.sort()
+
+    return [choice for choice in name_list if current_value.lower() in choice.lower()]
+
+
+@bot.slash_command(name="lookup_characters",
+                   description="Find a user's characters by their EQ name, "
+                               "Discord user name, or Discord display name")
+async def lookup_characters(
         ctx: discord.ApplicationContext,
-        char_name: discord.Option(
+        member_name: discord.Option(
             str,
-            autocomplete=char_name_autocompletion
+            autocomplete=combined_name_autocompletion
         )
 ):
     """
     find all characters associated with a
     given eq character name
     :param ctx: the application context of the bot
-    :param char_name: string selected by user (required)
+    :param member_name: string selected by user (required)
     :return: none
     """
     # # this slash command available to all users
@@ -124,13 +137,17 @@ async def lookup_characters_everquest(
 
     helper.log_activity(ctx.author, ctx.command, ctx.selected_options)
 
-    results = db.lookup_eq(char_name)
-    discord_name = helper.get_discord_name(char_name)
+    option_selected = ctx.selected_options[0]['value']
+    bracket = option_selected.find(']')
+    user_choice = option_selected[2:bracket - 1]
+
+    results = db.lookup_eq(user_choice)
+    discord_name = helper.get_discord_name(member_name)
 
     # if no matches found, notify user then exit
     if len(results) == 0:
         await ctx.respond(
-            f"```No records found for {char_name}.\n"
+            f"```No records found for {user_choice}.\n"
             f"Please try again.```",
             ephemeral=True
         )
@@ -145,53 +162,53 @@ async def lookup_characters_everquest(
     )
 
 
-@bot.slash_command(name="lookup_characters_discord",
-                   description="Find a user's characters by their Discord id")
-async def lookup_characters_discord(
-        ctx: discord.ApplicationContext,
-        discord_name: discord.Option(
-            str,
-            autocomplete=discord.utils.basic_autocomplete(discord_names)
-        )
-):
-    """
-    find all characters associated with a
-    given discord name
-    :param ctx: the application context of the bot
-    :param discord_name: string selected from dropdown (required)
-    :return: none
-    """
-    # this slash command available to all users
-    target_role = discord.utils.get(ctx.guild.roles, name="Seeker")
-
-    # if validate_role returns false, user is not authorized,
-    # so exit function
-    if not helper.validate_role(ctx.author.roles, target_role):
-        await not_authorized(ctx)
-        return
-
-    helper.log_activity(ctx.author, ctx.command, ctx.selected_options)
-
-    discord_id = helper.get_discord_id(discord_name)
-
-    # if no discord id found, notify user and exit function
-    if discord_id == "":
-        await ctx.respond(
-            f'```Discord ID not found for {discord_name}.\n'
-            f'Unable to query database.```',
-            ephemeral=True
-        )
-        return
-
-    results = db.lookup_discord(discord_id)
-
-    # print table of character results, no need to
-    # print discord name this time because it was
-    # provided by user
-    await ctx.respond(
-        f"```{helper.format_message(results)}```",
-        ephemeral=True
-    )
+# @bot.slash_command(name="lookup_characters_discord",
+#                    description="Find a user's characters by their Discord id")
+# async def lookup_characters_discord(
+#         ctx: discord.ApplicationContext,
+#         discord_name: discord.Option(
+#             str,
+#             autocomplete=discord.utils.basic_autocomplete(discord_names)
+#         )
+# ):
+#     """
+#     find all characters associated with a
+#     given discord name
+#     :param ctx: the application context of the bot
+#     :param discord_name: string selected from dropdown (required)
+#     :return: none
+#     """
+#     # this slash command available to all users
+#     target_role = discord.utils.get(ctx.guild.roles, name="Seeker")
+#
+#     # if validate_role returns false, user is not authorized,
+#     # so exit function
+#     if not helper.validate_role(ctx.author.roles, target_role):
+#         await not_authorized(ctx)
+#         return
+#
+#     helper.log_activity(ctx.author, ctx.command, ctx.selected_options)
+#
+#     discord_id = helper.get_discord_id(discord_name)
+#
+#     # if no discord id found, notify user and exit function
+#     if discord_id == "":
+#         await ctx.respond(
+#             f'```Discord ID not found for {discord_name}.\n'
+#             f'Unable to query database.```',
+#             ephemeral=True
+#         )
+#         return
+#
+#     results = db.lookup_discord(discord_id)
+#
+#     # print table of character results, no need to
+#     # print discord name this time because it was
+#     # provided by user
+#     await ctx.respond(
+#         f"```{helper.format_message(results)}```",
+#         ephemeral=True
+#     )
 
 
 @bot.slash_command(name="find_main_from_discord", description="Find a user's main character")
@@ -355,7 +372,7 @@ async def add_character(
         # trim trailing pipe symbol and whitespace
         message = message[0:len(message) - 3]
 
-        await bot.sync_commands(guild_ids=[helper.get_guild().id])
+        await bot.sync_commands(guild_ids=[helper.get_guild().id], force=True)
         await ctx.respond(
             f"```{message}) entered."
             f"\n{results} {row} added to database.```",
@@ -445,7 +462,7 @@ async def edit_character(
     else:
         message = f"{char_name} not found"
 
-    await bot.sync_commands(guild_ids=[helper.get_guild().id])
+    await bot.sync_commands(guild_ids=[helper.get_guild().id], force=True)
     await ctx.respond(
         f"```{message}."
         f"\n{results} {row} updated in database.```",
@@ -488,7 +505,7 @@ async def delete_character(
     else:
         message = f"{char_name} not found"
 
-    await bot.sync_commands(guild_ids=[helper.get_guild().id])
+    await bot.sync_commands(guild_ids=[helper.get_guild().id], force=True)
     await ctx.respond(
         f"```{message}."
         f"\n{results} {row} deleted from database.```",
