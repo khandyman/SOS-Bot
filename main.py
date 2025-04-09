@@ -34,8 +34,7 @@ async def on_connect():
 @bot.event
 async def on_ready():
     """
-    start up function: gets guild instance,
-    builds names and nicks lists from guild,
+    start up function: gets guild instance
     and starts keep alive routine
     :return: none
     """
