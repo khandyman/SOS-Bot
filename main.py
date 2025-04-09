@@ -48,7 +48,7 @@ async def on_ready():
         f'{guild.name} (id: {guild.id})'
     )
 
-    await bot.sync_commands(guild_ids=discord.utils.get(bot.guilds, name=guild), force=True)
+    # await bot.register_commands()
     keep_alive.start()
     # find_discrepancies(guild)
 
@@ -89,6 +89,12 @@ def find_discrepancies(guild):
     for item in discrepancies:
         print(item)
 
+@bot.slash_command(name="clear_commands")
+async def clear_commands(bot):
+    bot.ApplicationContext.commands.clear()
+    for guild in bot.guilds:
+        bot.application.commands.clear(guild=guild)
+
 
 async def char_name_autocompletion(
         ctx: discord.AutocompleteContext
@@ -111,7 +117,8 @@ async def combined_name_autocompletion(
 
 @bot.slash_command(name="lookup_characters",
                    description="Find a user's characters by their EQ name, "
-                               "Discord user name, or Discord display name")
+                               "Discord user name, or Discord display name",
+)
 async def lookup_characters(
         ctx: discord.ApplicationContext,
         member_name: discord.Option(
@@ -372,12 +379,12 @@ async def add_character(
         # trim trailing pipe symbol and whitespace
         message = message[0:len(message) - 3]
 
-        await bot.sync_commands(guild_ids=[helper.get_guild().id], force=True)
         await ctx.respond(
             f"```{message}) entered."
             f"\n{results} {row} added to database.```",
             ephemeral=True
         )
+        # await bot.sync_commands()
     except Exception as err:
         if "Duplicate entry" in str(err):
             await ctx.respond(
@@ -462,12 +469,12 @@ async def edit_character(
     else:
         message = f"{char_name} not found"
 
-    await bot.sync_commands(guild_ids=[helper.get_guild().id], force=True)
     await ctx.respond(
         f"```{message}."
         f"\n{results} {row} updated in database.```",
         ephemeral=True
     )
+    # await bot.sync_commands()
 
 
 @bot.slash_command(name="delete_character", description="Delete a character")
@@ -505,12 +512,13 @@ async def delete_character(
     else:
         message = f"{char_name} not found"
 
-    await bot.sync_commands(guild_ids=[helper.get_guild().id], force=True)
     await ctx.respond(
         f"```{message}."
         f"\n{results} {row} deleted from database.```",
         ephemeral=True
     )
+
+    # await bot.sync_commands()
 
 
 async def not_authorized(ctx: discord.ApplicationContext):
