@@ -88,9 +88,10 @@ class Helpers:
         """
         return discord.utils.get(self._bot.guilds, name=self._guild)
 
-    def get_discord_id(self, discord_name):
+    def get_discord_id(self, discord_name, name_type):
         """
         Find the discord id of a member
+        :param name_type: flag for type of Discord name
         :param discord_name: Discord display_name
         :return: string Discord ID number
         """
@@ -99,8 +100,12 @@ class Helpers:
         # loop through members of guild, if match
         # is found, grab the ID
         for member in self.get_guild().members:
-            if discord_name == member.display_name:
-                discord_id = member.id
+            if name_type == 'display':
+                if discord_name == member.display_name:
+                    discord_id = member.id
+            elif name_type == 'account':
+                if discord_name == member.name:
+                    discord_id = member.id
 
         return discord_id
 
@@ -124,7 +129,7 @@ class Helpers:
 
         return discord_name
 
-    def get_all_discord_names(self):
+    def get_all_discord_names(self, type):
         """
         Grab all member display_names
         :return: list of Discord display_names
@@ -133,7 +138,10 @@ class Helpers:
 
         # loop through all members, add display_names to list
         for member in self.get_guild().members:
-            discord_names.append(member.display_name)
+            if type == "display":
+                discord_names.append(member.display_name)
+            elif type == "name":
+                discord_names.append(member.name)
 
         # fancy looking, but just sorts both lists case insensitively
         discord_names.sort(key=lambda s: s.lower())

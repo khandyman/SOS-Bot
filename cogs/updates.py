@@ -38,7 +38,7 @@ class Updates(commands.Cog):
         :return: filtered list
         """
         current_value = ctx.value
-        discord_list = self._helper.get_all_discord_names()
+        discord_list = self._helper.get_all_discord_names('display')
 
         return [choice for choice in discord_list if current_value.lower() in choice.lower()]
 
@@ -87,21 +87,28 @@ class Updates(commands.Cog):
             ctx: discord.ApplicationContext,
             discord_name: discord.Option(
                 str,
+                description='Discord display name',
                 autocomplete=discord_name_autocompletion
             ),
-            char_name: str,
+            char_name: discord.Option(
+                str,
+                description='EverQuest character name',
+            ),
             char_race: discord.Option(
                 str,
+                description='EverQuest character race',
                 autocomplete=races_autocompletion,
                 required=False
             ),
             char_class: discord.Option(
                 str,
+                description='EverQuest character class',
                 autocomplete=classes_autocompletion,
                 required=False
             ),
             char_type: discord.Option(
                 str,
+                description='EverQuest character type',
                 autocomplete=types_autocompletion,
                 required=False
             )
@@ -131,7 +138,7 @@ class Updates(commands.Cog):
         # the discord id for the provided discord name exists
         # i.e., have any characters ever been entered for this
         # discord user
-        discord_id = self._helper.get_discord_id(discord_name)
+        discord_id = self._helper.get_discord_id(discord_name, 'display')
 
         # if no discord id in database, notify user and exit
         if discord_id == "":
@@ -197,21 +204,29 @@ class Updates(commands.Cog):
             ctx: discord.ApplicationContext,
             char_name: discord.Option(
                 str,
+                description='Original name',
                 autocomplete=char_name_autocompletion
             ),
-            new_name: discord.Option(str, required=False),
+            new_name: discord.Option(
+                str,
+                description='New name',
+                required=False
+            ),
             char_race: discord.Option(
                 str,
+                description='New race',
                 autocomplete=races_autocompletion,
                 required=False
             ),
             char_class: discord.Option(
                 str,
+                description='New class',
                 autocomplete=classes_autocompletion,
                 required=False
             ),
             char_type: discord.Option(
                 str,
+                description='New type',
                 autocomplete=types_autocompletion,
                 required=False
             )
@@ -288,6 +303,7 @@ class Updates(commands.Cog):
             ctx: discord.ApplicationContext,
             char_name: discord.Option(
                 str,
+                description='EverQuest character name',
                 autocomplete=char_name_autocompletion
             )
     ):

@@ -25,7 +25,7 @@ class Lookups(commands.Cog):
         :return: filtered list
         """
         current_value = ctx.value
-        discord_list = self._helper.get_all_discord_names()
+        discord_list = self._helper.get_all_discord_names('name')
 
         return [choice for choice in discord_list if current_value.lower() in choice.lower()]
 
@@ -53,6 +53,7 @@ class Lookups(commands.Cog):
             ctx: discord.ApplicationContext,
             member_name: discord.Option(
                 str,
+                description='[ EverQuest ] [ Discord ]',
                 autocomplete=combined_name_autocompletion
             )
     ):
@@ -112,6 +113,7 @@ class Lookups(commands.Cog):
             ctx: discord.ApplicationContext,
             discord_name: discord.Option(
                 str,
+                description='Discord account name',
                 autocomplete=discord_name_autocompletion
             )
     ):
@@ -132,7 +134,7 @@ class Lookups(commands.Cog):
 
         self._helper.log_activity(ctx.author, ctx.command, ctx.selected_options)
 
-        discord_id = self._helper.get_discord_id(discord_name)
+        discord_id = self._helper.get_discord_id(discord_name, 'account')
 
         # if no discord id found, notify user and exit function
         if discord_id == "":
