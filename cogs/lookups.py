@@ -39,6 +39,7 @@ class Lookups(commands.Cog):
         :return: filtered list
         """
         current_value = ctx.value
+
         name_list = self._helper.get_combined_names(self._database.get_all_characters())
         name_list.sort()
 
