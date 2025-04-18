@@ -1,4 +1,3 @@
-from werkzeug.security import generate_password_hash
 from dotenv import load_dotenv
 from sqlalchemy import create_engine, text
 from os import environ
