@@ -118,6 +118,17 @@ class Database:
         """
         return self.get_list(self.get_all_characters(), 'char_name')
 
+    def get_all_mob_names(self):
+        """
+        Get all mob names
+        :return: results of the select query, in list form
+        """
+        query = (
+            "SELECT mob_name FROM sos_bot.respawns"
+        )
+
+        return self.execute_read(query)
+
     def insert_character(self, discord_id, char_name, char_race, char_class, char_type, char_priority):
         """
         Add a new character to the database

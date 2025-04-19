@@ -85,5 +85,24 @@ def find_discrepancies(guild):
     for item in discrepancies:
         print(item)
 
+# bot.run(TOKEN)
 
-bot.run(TOKEN)
+print(db.get_all_mob_names())
+
+from classes.tracker import Tracker
+tracker = Tracker()
+log_lines = tracker.follow()
+
+for line in log_lines:
+    if 'Druzzil Ro tells the guild' in line:
+    # if 'test' in line:
+        time_string = tracker.parse_time(line)
+        mob_name = tracker.parse_mob(line)
+
+        print(time_string)
+        print(mob_name)
+
+test_kill = f"[Fri Apr 18 00:45:28 2025] Druzzil Ro tells the guild, 'Cauthorn of <Seekers of Souls> has killed Essedera in Temple of Veeshan!'"
+
+# tracker.calculate_respawn()
+# print(tracker.scrape_respawn('Yelinak'))
