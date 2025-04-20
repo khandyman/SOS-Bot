@@ -1,10 +1,11 @@
 # bot.py
 import os
-
+import threading
 import discord  # actually using py-cord instead of discord.py
 from discord.ext.tasks import loop
 from classes.database import Database
 from classes.helpers import Helpers
+from classes.tracker import Tracker
 from dotenv import load_dotenv
 import asyncio
 
@@ -20,6 +21,7 @@ intents = discord.Intents.all()
 bot = discord.Bot(intents=intents)
 db = Database()
 helper = Helpers(bot, GUILD)
+tracker = Tracker()
 
 
 @bot.event
@@ -85,24 +87,48 @@ def find_discrepancies(guild):
     for item in discrepancies:
         print(item)
 
-# bot.run(TOKEN)
 
-print(db.get_all_mob_names())
+def start_bot():
+    bot.run(TOKEN)
 
-from classes.tracker import Tracker
-tracker = Tracker()
-log_lines = tracker.follow()
 
-for line in log_lines:
-    if 'Druzzil Ro tells the guild' in line:
-    # if 'test' in line:
-        time_string = tracker.parse_time(line)
-        mob_name = tracker.parse_mob(line)
+def start_tracker():
+    # tracker.update_respawn_times(db.get_all_mob_names())
+    # kill_time = "Thu Apr 17 23:57:03 2025"
 
-        print(time_string)
-        print(mob_name)
+    # for mob in db.get_all_mob_names():
+    #     tracker.calculate_respawn(mob, kill_time)
+    #     break
 
-test_kill = f"[Fri Apr 18 00:45:28 2025] Druzzil Ro tells the guild, 'Cauthorn of <Seekers of Souls> has killed Essedera in Temple of Veeshan!'"
+    log_lines = tracker.follow()
+
+    for line in log_lines:
+        if 'Druzzil Ro tells the guild' in line:
+            kill_time = tracker.parse_time(line)
+            mob_name = tracker.parse_mob(line)
+
+            tracker.update_kill_time(mob_name, kill_time)
+
+
+async def send_message(mob_name, kill_time):
+    general = bot.get_channel(1155966760919511172)
+    await general.send(tracker.update_kill_time(mob_name, kill_time))
+
+
+if __name__ == "__main__":
+    bot_thread = threading.Thread(target=start_bot)
+    tracker_thread = threading.Thread(target=start_tracker)
+
+    bot_thread.start()
+    tracker_thread.start()
+
+    bot_thread.join()
+    tracker_thread.join()
+
+
+# print(db.get_all_mob_names())
+
+# test_kill = f"[Fri Apr 18 00:45:28 2025] Druzzil Ro tells the guild, 'Cauthorn of <Seekers of Souls> has killed Essedera in Temple of Veeshan!'"
 
 # tracker.calculate_respawn()
 # print(tracker.scrape_respawn('Yelinak'))

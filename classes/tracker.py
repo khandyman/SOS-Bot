@@ -1,10 +1,12 @@
 import time
 from datetime import datetime, timedelta
+from classes.database import Database
 import requests
 
 
 class Tracker:
     def __init__(self):
+        self._db = Database()
         self._file_path = "C:\\EQ-ProjectQuarm\\eqlog_Torynmule_pq.proj.txt"
         self._file = open(self._file_path, 'r')
 
@@ -20,17 +22,29 @@ class Tracker:
 
             yield line
 
-    def calculate_respawn(self, kill_time):
-        kill_time = "Thu Apr 17 23:57:03 2025"
+    def calculate_respawn(self, mob_name, kill_time):
+        # kill_time = "Thu Apr 17 23:57:03 2025"
         format_string = "%a %b %d %H:%M:%S %Y"
-
         datetime_killtime = datetime.strptime(kill_time, format_string)
-        respawn_time = datetime_killtime + timedelta(days=2, hours=18)
+
+        mob_data = self._db.get_mob_data(mob_name)
+
+        delta_weeks = int(mob_data[0]['lockout_weeks'])
+        delta_days = int(mob_data[0]['lockout_days'])
+        delta_hours = int(mob_data[0]['lockout_hours'])
+        delta_minutes = int(mob_data[0]['lockout_minutes'])
+
+        add_time = timedelta(weeks=delta_weeks, days=delta_days, hours=delta_hours, minutes=delta_minutes)
+        respawn_time = datetime_killtime + add_time
+
         timezone_name = respawn_time.astimezone().tzname()
 
-        print(datetime_killtime)
-        print(respawn_time)
-        print(timezone_name)
+        # print(f"mob name: {mob_data[0]['mob_name']}")
+        # print(f"kill time: {datetime_killtime}")
+        # print(f"respawn_time: {respawn_time}")
+        # print(f"time zone: {timezone_name}")
+
+        return respawn_time
 
     def scrape_respawn(self, mob):
         respawn_dict = {}
@@ -80,9 +94,40 @@ class Tracker:
         return final_string
 
     def parse_mob(self, line):
-        mob_start = line.find('killed') + 7
-        mob_end = line.find('in') - 1
+        mob_start = line.find(' killed ') + 8
+        mob_end = line.find(' in ')
 
         mob_name = line[mob_start:mob_end]
 
         return mob_name
+
+    def update_kill_time(self, mob_name, kill_time):
+        # kill_time = "Thu Apr 17 23:57:03 2025"
+        respawn_time = self.calculate_respawn(mob_name, kill_time)
+        time_zone = respawn_time.astimezone().tzname()
+
+        print(mob_name)
+        print(kill_time)
+        print(respawn_time)
+        print(time_zone)
+
+        if self._db.update_kill_time(mob_name, kill_time, respawn_time, time_zone):
+            kill_message = (
+                f"```{mob_name} was killed at: {kill_time}.\n"
+                f"It will respawn at: {respawn_time}.```"
+            )
+        else:
+            kill_message = f"```Database insert of kill time for {mob_name} failed.```"
+
+        return kill_message
+
+    def update_respawn_times(self, mob_list):
+        for mob in mob_list:
+            current_respawn = self.scrape_respawn(mob)
+            self._db.update_mob_respawns(mob, current_respawn)
+            print(f"{mob}: {current_respawn}")
+
+    def get_mob_respawn(self, mob_name):
+        mob_data = self._db.get_respawn_time(mob_name)
+
+        return mob_data

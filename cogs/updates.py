@@ -4,15 +4,17 @@ from dotenv import load_dotenv
 from discord.ext import commands
 from classes.database import Database
 from classes.helpers import Helpers
+from classes.tracker import Tracker
 
 class Updates(commands.Cog):
     """
     All slash commands that update information in database
     """
-    def __init__(self, bot, database, helper):
+    def __init__(self, bot, database, helper, tracker):
         self._bot = bot
         self._database = database
         self._helper = helper
+        self._tracker = tracker
 
     async def char_name_autocompletion(
             self,
@@ -340,6 +342,39 @@ class Updates(commands.Cog):
             ephemeral=True
         )
 
+    @discord.slash_command(
+        name="update_respawns",
+        description="Syncs bot database respawn times with Quarm database"
+    )
+    async def update_respawns(
+            self,
+            ctx: discord.ApplicationContext,
+    ):
+        # this slash command only available to officers
+        target_role = discord.utils.get(ctx.guild.roles, name="Officer")
+
+        # if validate_role returns false, user is not authorized,
+        # so exit function
+        if not self._helper.validate_role(ctx.author.roles, target_role):
+            await self.not_authorized(ctx)
+            return
+
+        self._helper.log_activity(ctx.author, ctx.command, ctx.selected_options)
+
+        await ctx.respond(
+            "```Updating all mob respawn times. This will take a while.\n"
+            "Please be patient...```",
+            ephemeral=True
+        )
+
+        mob_list = self._database.get_all_mob_names()
+        self._tracker.update_respawn_times(mob_list)
+
+        await ctx.respond(
+            "```Database mob respawn time update is complete.```",
+            ephemeral=True
+        )
+
     async def not_authorized(
             self,
             ctx: discord.ApplicationContext
@@ -357,5 +392,6 @@ def setup(bot):
     guild = os.getenv('DISCORD_GUILD')
     helper = Helpers(bot, guild)
     database = Database()
+    tracker = Tracker()
 
-    bot.add_cog(Updates(bot, database, helper))
+    bot.add_cog(Updates(bot, database, helper, tracker))

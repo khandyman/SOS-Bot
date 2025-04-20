@@ -3,6 +3,7 @@ import discord
 from dotenv import load_dotenv
 from discord.ext import commands
 from classes.database import Database
+from classes.tracker import Tracker
 from classes.helpers import Helpers
 
 
@@ -10,10 +11,11 @@ class Lookups(commands.Cog):
     """
     All slash commands that read information from database
     """
-    def __init__(self, bot, database, helper):
+    def __init__(self, bot, database, helper, tracker):
         self._bot = bot
         self._database = database
         self._helper = helper
+        self._tracker = tracker
 
     async def discord_name_autocompletion(
             self,
@@ -44,6 +46,20 @@ class Lookups(commands.Cog):
         name_list.sort()
 
         return [choice for choice in name_list if current_value.lower() in choice.lower()]
+
+    async def mob_list_autocompletion(
+            self,
+            ctx: discord.AutocompleteContext
+    ):
+        """
+        Create a filtering list of discord names
+        :param ctx: the application context of the bot
+        :return: filtered list
+        """
+        current_value = ctx.value
+        mob_list = self._database.get_all_mob_names()
+
+        return [choice for choice in mob_list if current_value.lower() in choice.lower()]
 
     @discord.slash_command(name="lookup_characters",
                            description="Find a user's characters by their EQ name, "
@@ -198,6 +214,49 @@ class Lookups(commands.Cog):
             ephemeral=True
         )
 
+    @discord.slash_command(
+        name="get_mob_respawn",
+        description="Get the kill time and respawn for a mob"
+    )
+    async def get_mob_respawn(
+            self,
+            ctx: discord.ApplicationContext,
+            mob_name: discord.Option(
+                str,
+                description='Name of mob to look up',
+                autocomplete=mob_list_autocompletion
+            )
+    ):
+        # this slash command available to all users
+        target_role = discord.utils.get(ctx.guild.roles, name="Seeker")
+
+        # if validate_role returns false, user is not authorized,
+        # so exit function
+        if not self._helper.validate_role(ctx.author.roles, target_role):
+            await self.not_authorized(ctx)
+            return
+
+        self._helper.log_activity(ctx.author, ctx.command, ctx.selected_options)
+
+        # obtain the user's selection and get just the string name
+        option_selected = ctx.selected_options[0]['value']
+        mob_data = self._tracker.get_mob_respawn(option_selected)
+
+        if mob_data[0]['kill_time'] is None:
+            await ctx.respond(
+                f"```No kill data found for {option_selected}.```",
+                ephemeral=True
+            )
+            return
+
+        # if matches found display discord id,
+        # then print table of character results
+        await ctx.respond(
+            f"```{option_selected} was killed at: {mob_data[0]['kill_time']}.\n"
+            f"Mob will respawn at: {mob_data[0]['respawn_time']}.```",
+            ephemeral=True
+        )
+
     async def not_authorized(
             self,
             ctx: discord.ApplicationContext):
@@ -214,5 +273,6 @@ def setup(bot):
     guild = os.getenv('DISCORD_GUILD')
     helper = Helpers(bot, guild)
     database = Database()
+    tracker = Tracker()
 
-    bot.add_cog(Lookups(bot, database, helper))
+    bot.add_cog(Lookups(bot, database, helper, tracker))

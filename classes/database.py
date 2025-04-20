@@ -7,6 +7,7 @@ class Database:
     """
     This class provides all database interaction
     """
+
     def __init__(self):
         load_dotenv()
 
@@ -22,6 +23,7 @@ class Database:
         # create the query engine
         self._engine = create_engine(self._params)
 
+    ################# READ METHODS #################
     def get_discord_ids(self):
         """
         Get discord ids and char names
@@ -127,8 +129,20 @@ class Database:
             "SELECT mob_name FROM sos_bot.respawns"
         )
 
+        return self.get_list(self.execute_read(query), 'mob_name')
+
+    def get_mob_data(self, mob_name):
+        query = f"SELECT * FROM sos_bot.respawns WHERE mob_name = '{mob_name}'"
+
         return self.execute_read(query)
 
+    def get_respawn_time(self, mob_name):
+        query = (f"SELECT kill_time, respawn_time, time_zone FROM sos_bot.respawns "
+                 f"WHERE mob_name = '{mob_name}'")
+
+        return self.execute_read(query)
+
+    ################# UPDATE METHODS #################
     def insert_character(self, discord_id, char_name, char_race, char_class, char_type, char_priority):
         """
         Add a new character to the database
@@ -189,6 +203,25 @@ class Database:
 
         return self.execute_update(query)
 
+    def update_kill_time(self, mob_name, kill_time, respawn_time, time_zone):
+        query = (
+            f"UPDATE sos_bot.respawns SET kill_time = '{kill_time}', respawn_time = '{respawn_time}', "
+            f"time_zone = '{time_zone}' WHERE mob_name = '{mob_name}'"
+        )
+
+        return self.execute_update(query)
+
+    def update_mob_respawns(self, mob_name, respawn_dict):
+        query = (
+            f"UPDATE sos_bot.respawns SET lockout_weeks = '{respawn_dict['weeks']}', "
+            f"lockout_days = '{respawn_dict['days']}', lockout_hours = '{respawn_dict['hours']}', "
+            f"lockout_minutes = '{respawn_dict['minutes']}' "
+            f"WHERE mob_name = '{mob_name}'"
+        )
+        print(query)
+        return self.execute_update(query)
+
+    ################# UTILITY METHODS #################
     def execute_read(self, query):
         """
         Send a read query to database engine
@@ -246,3 +279,12 @@ class Database:
             results_list.append(result[field])
 
         return results_list
+
+    def format_quotes(self, mob_name):
+        quote_index = mob_name.find("'")
+
+        if quote_index != -1:
+            temp_string = mob_name
+            mob_name = temp_string[:quote_index] + "'" + temp_string[quote_index:]
+
+        return mob_name
