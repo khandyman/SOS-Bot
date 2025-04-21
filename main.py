@@ -93,13 +93,6 @@ def start_bot():
 
 
 def start_tracker():
-    # tracker.update_respawn_times(db.get_all_mob_names())
-    # kill_time = "Thu Apr 17 23:57:03 2025"
-
-    # for mob in db.get_all_mob_names():
-    #     tracker.calculate_respawn(mob, kill_time)
-    #     break
-
     log_lines = tracker.follow()
 
     for line in log_lines:
@@ -126,9 +119,4 @@ if __name__ == "__main__":
     tracker_thread.join()
 
 
-# print(db.get_all_mob_names())
-
 # test_kill = f"[Fri Apr 18 00:45:28 2025] Druzzil Ro tells the guild, 'Cauthorn of <Seekers of Souls> has killed Essedera in Temple of Veeshan!'"
-
-# tracker.calculate_respawn()
-# print(tracker.scrape_respawn('Yelinak'))

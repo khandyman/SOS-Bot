@@ -23,8 +23,7 @@ class Tracker:
             yield line
 
     def calculate_respawn(self, mob_name, kill_time):
-        # kill_time = "Thu Apr 17 23:57:03 2025"
-        format_string = "%a %b %d %H:%M:%S %Y"
+        format_string = "%Y-%m-%d %H:%M:%S"
         datetime_killtime = datetime.strptime(kill_time, format_string)
 
         mob_data = self._db.get_mob_data(mob_name)
@@ -36,13 +35,6 @@ class Tracker:
 
         add_time = timedelta(weeks=delta_weeks, days=delta_days, hours=delta_hours, minutes=delta_minutes)
         respawn_time = datetime_killtime + add_time
-
-        timezone_name = respawn_time.astimezone().tzname()
-
-        # print(f"mob name: {mob_data[0]['mob_name']}")
-        # print(f"kill time: {datetime_killtime}")
-        # print(f"respawn_time: {respawn_time}")
-        # print(f"time zone: {timezone_name}")
 
         return respawn_time
 
@@ -83,15 +75,12 @@ class Tracker:
 
     def parse_time(self, line):
         separates = line.split()
-        time_string = ""
 
-        for i in range(0, 5):
-            time_part = separates[i].strip("[]")
-            time_string = time_string + time_part + " "
+        month_int = str(datetime.strptime(separates[1], "%b").month).zfill(2)
 
-        final_string = time_string[0:len(time_string) - 1]
+        kill_time = f"{separates[4].strip("]")}-{month_int}-{separates[2]} {separates[3]}"
 
-        return final_string
+        return kill_time
 
     def parse_mob(self, line):
         mob_start = line.find(' killed ') + 8
@@ -104,12 +93,9 @@ class Tracker:
     def update_kill_time(self, mob_name, kill_time):
         # kill_time = "Thu Apr 17 23:57:03 2025"
         respawn_time = self.calculate_respawn(mob_name, kill_time)
-        time_zone = respawn_time.astimezone().tzname()
-
-        print(mob_name)
-        print(kill_time)
-        print(respawn_time)
-        print(time_zone)
+        time_zone = datetime.now().astimezone().tzname()
+        print(datetime.now().astimezone())
+        print(f"{mob_name} | {kill_time} | {respawn_time} | {time_zone}")
 
         if self._db.update_kill_time(mob_name, kill_time, respawn_time, time_zone):
             kill_message = (
@@ -128,6 +114,11 @@ class Tracker:
             print(f"{mob}: {current_respawn}")
 
     def get_mob_respawn(self, mob_name):
-        mob_data = self._db.get_respawn_time(mob_name)
+        mob_data = self._db.get_mob_respawn(mob_name)
 
         return mob_data
+
+    def get_zone_respawns(self, zone_name):
+        zone_data = self._db.get_zone_respawns(zone_name)
+
+        return zone_data

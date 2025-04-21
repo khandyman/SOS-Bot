@@ -131,14 +131,37 @@ class Database:
 
         return self.get_list(self.execute_read(query), 'mob_name')
 
+    def get_all_zone_names(self):
+        """
+        Get all zone names
+        :return: results of the select query, in list form
+        """
+        query = (
+            "SELECT DISTINCT mob_zone FROM sos_bot.respawns"
+        )
+
+        return self.get_list(self.execute_read(query), 'mob_zone')
+
     def get_mob_data(self, mob_name):
         query = f"SELECT * FROM sos_bot.respawns WHERE mob_name = '{mob_name}'"
 
         return self.execute_read(query)
 
-    def get_respawn_time(self, mob_name):
-        query = (f"SELECT kill_time, respawn_time, time_zone FROM sos_bot.respawns "
+    def get_mob_respawn(self, mob_name):
+        query = (f"SELECT mob_name, kill_time, respawn_time, time_zone FROM sos_bot.respawns "
                  f"WHERE mob_name = '{mob_name}'")
+
+        return self.execute_read(query)
+
+    def get_zone_respawns(self, zone_name):
+        find_quote = zone_name.find("'")
+
+        if find_quote != -1:
+            temp_zone = zone_name
+            zone_name = temp_zone[:find_quote] + "'" + temp_zone[find_quote:]
+
+        query = (f"SELECT mob_name, kill_time, respawn_time, time_zone FROM sos_bot.respawns "
+                 f"WHERE mob_zone = '{zone_name}'")
 
         return self.execute_read(query)
 

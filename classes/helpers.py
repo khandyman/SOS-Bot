@@ -24,7 +24,7 @@ class Helpers:
         else:
             return False
 
-    def format_message(self, results):
+    def format_char_message(self, results):
         """
         Format database results into table format
         :param results: list of dictionary entries;
@@ -45,6 +45,35 @@ class Helpers:
                 str(result['char_class']),
                 str(result['char_type'])
             )
+
+        return message
+
+    def format_mob_message(self, results):
+        """
+        Format database results into table format
+        :param results: list of dictionary entries;
+        each item is a different character
+        :return: formatted string
+        """
+        headers = "Mob Killed Respawning".split()
+        row = "{:<30} {:<20} {:<20} \n"       # set column widths
+        time_zone = None
+
+        message = row.format(*headers)
+        message = message + "-" * 71 + "\n"         # add a separator
+
+        for result in results:
+            # for each mob, arrange them in the correct order
+            message = message + row.format(
+                str(result['mob_name']),
+                str(result['kill_time']),
+                str(result['respawn_time'])
+            )
+
+            if result['kill_time'] is not None:
+                time_zone = result['time_zone']
+
+        message = message + f"\nTime Zone: {time_zone}"
 
         return message
 
@@ -129,7 +158,7 @@ class Helpers:
 
         return discord_name
 
-    def get_all_discord_names(self, type):
+    def get_all_discord_names(self, name_type):
         """
         Grab all member display_names
         :return: list of Discord display_names
@@ -138,9 +167,9 @@ class Helpers:
 
         # loop through all members, add display_names to list
         for member in self.get_guild().members:
-            if type == "display":
+            if name_type == "display":
                 discord_names.append(member.display_name)
-            elif type == "name":
+            elif name_type == "name":
                 discord_names.append(member.name)
 
         # fancy looking, but just sorts both lists case insensitively

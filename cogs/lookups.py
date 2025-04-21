@@ -17,7 +17,12 @@ class Lookups(commands.Cog):
         self._helper = helper
         self._tracker = tracker
 
-    async def discord_name_autocompletion(
+        self._name_list = []
+        self._discord_list = []
+        self._mob_list = []
+        self._zone_list = []
+
+    def discord_name_autocompletion(
             self,
             ctx: discord.AutocompleteContext
     ):
@@ -27,11 +32,13 @@ class Lookups(commands.Cog):
         :return: filtered list
         """
         current_value = ctx.value
-        discord_list = self._helper.get_all_discord_names('name')
 
-        return [choice for choice in discord_list if current_value.lower() in choice.lower()]
+        if len(self._discord_list) == 0:
+            self._discord_list = self._helper.get_all_discord_names('name')
 
-    async def combined_name_autocompletion(
+        return [choice for choice in self._discord_list if current_value.lower() in choice.lower()]
+
+    def combined_name_autocompletion(
             self,
             ctx: discord.AutocompleteContext
     ):
@@ -42,12 +49,13 @@ class Lookups(commands.Cog):
         """
         current_value = ctx.value
 
-        name_list = self._helper.get_combined_names(self._database.get_all_characters())
-        name_list.sort()
+        if len(self._name_list) == 0:
+            self._name_list = self._helper.get_combined_names(self._database.get_all_characters())
+            self._name_list.sort()
 
-        return [choice for choice in name_list if current_value.lower() in choice.lower()]
+        return [choice for choice in self._name_list if current_value.lower() in choice.lower()]
 
-    async def mob_list_autocompletion(
+    def mob_list_autocompletion(
             self,
             ctx: discord.AutocompleteContext
     ):
@@ -57,9 +65,27 @@ class Lookups(commands.Cog):
         :return: filtered list
         """
         current_value = ctx.value
-        mob_list = self._database.get_all_mob_names()
 
-        return [choice for choice in mob_list if current_value.lower() in choice.lower()]
+        if len(self._mob_list) == 0:
+            self._mob_list = self._database.get_all_mob_names()
+
+        return [choice for choice in self._mob_list if current_value.lower() in choice.lower()]
+
+    def zone_list_autocompletion(
+            self,
+            ctx: discord.AutocompleteContext
+    ):
+        """
+        Create a filtering list of discord names
+        :param ctx: the application context of the bot
+        :return: filtered list
+        """
+        current_value = ctx.value
+
+        if len(self._zone_list) == 0:
+            self._zone_list = self._database.get_all_zone_names()
+
+        return [choice for choice in self._zone_list if current_value.lower() in choice.lower()]
 
     @discord.slash_command(name="lookup_characters",
                            description="Find a user's characters by their EQ name, "
@@ -93,9 +119,9 @@ class Lookups(commands.Cog):
         self._helper.log_activity(ctx.author, ctx.command, ctx.selected_options)
 
         # obtain the user's selection and get just the string name
-        option_selected = ctx.selected_options[0]['value']
-        bracket = option_selected.find(']')
-        user_choice = option_selected[2:bracket - 1]
+        # option_selected = ctx.selected_options[0]['value']
+        bracket = member_name.find(']')
+        user_choice = member_name[2:bracket - 1]
 
         # get the list of chars from database
         results = self._database.lookup_eq(user_choice)
@@ -117,7 +143,7 @@ class Lookups(commands.Cog):
         # then print table of character results
         await ctx.respond(
             f"```List of characters for: {discord_name}\n"
-            f"\n{self._helper.format_message(results)}```",
+            f"\n{self._helper.format_char_message(results)}```",
             ephemeral=True
         )
 
@@ -180,7 +206,7 @@ class Lookups(commands.Cog):
         name="get_all_mains",
         description="Get a list of all mains"
     )
-    async def get_all_mains(
+    async def find_all_mains(
             self,
             ctx: discord.ApplicationContext
     ):
@@ -239,21 +265,52 @@ class Lookups(commands.Cog):
         self._helper.log_activity(ctx.author, ctx.command, ctx.selected_options)
 
         # obtain the user's selection and get just the string name
-        option_selected = ctx.selected_options[0]['value']
-        mob_data = self._tracker.get_mob_respawn(option_selected)
-
-        if mob_data[0]['kill_time'] is None:
-            await ctx.respond(
-                f"```No kill data found for {option_selected}.```",
-                ephemeral=True
-            )
-            return
+        # option_selected = ctx.selected_options[0]['value']
+        mob_data = self._tracker.get_mob_respawn(mob_name)
 
         # if matches found display discord id,
         # then print table of character results
         await ctx.respond(
-            f"```{option_selected} was killed at: {mob_data[0]['kill_time']}.\n"
-            f"Mob will respawn at: {mob_data[0]['respawn_time']}.```",
+            f"```{self._helper.format_mob_message(mob_data)}```",
+            # f"```{mob_name} was killed at: {mob_data[0]['kill_time']}.\n"
+            # f"Mob will respawn at: {mob_data[0]['respawn_time']}.```",
+            ephemeral=True
+        )
+
+    @discord.slash_command(
+        name="get_zone_respawns",
+        description="Get the kill time and respawn for all mobs in a zone"
+    )
+    async def get_zone_respawns(
+            self,
+            ctx: discord.ApplicationContext,
+            zone_name: discord.Option(
+                str,
+                description='Name of zone to look up',
+                autocomplete=zone_list_autocompletion
+            )
+    ):
+        # this slash command available to all users
+        target_role = discord.utils.get(ctx.guild.roles, name="Seeker")
+
+        # if validate_role returns false, user is not authorized,
+        # so exit function
+        if not self._helper.validate_role(ctx.author.roles, target_role):
+            await self.not_authorized(ctx)
+            return
+
+        self._helper.log_activity(ctx.author, ctx.command, ctx.selected_options)
+
+        # obtain the user's selection and get just the string name
+        # option_selected = ctx.selected_options[0]['value']
+        zone_data = self._tracker.get_zone_respawns(zone_name)
+
+        # if matches found display discord id,
+        # then print table of character results
+        await ctx.respond(
+            f"```{self._helper.format_mob_message(zone_data)}```",
+            # f"```{mob_name} was killed at: {mob_data[0]['kill_time']}.\n"
+            # f"Mob will respawn at: {mob_data[0]['respawn_time']}.```",
             ephemeral=True
         )
 

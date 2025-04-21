@@ -16,6 +16,12 @@ class Updates(commands.Cog):
         self._helper = helper
         self._tracker = tracker
 
+        self._char_list = []
+        self._discord_list = []
+        self._race_list = []
+        self._class_list = []
+        self._type_list = []
+
     async def char_name_autocompletion(
             self,
             ctx: discord.AutocompleteContext,
@@ -26,9 +32,11 @@ class Updates(commands.Cog):
         :return: filtered list
         """
         current_value = ctx.value
-        char_list = self._database.get_all_char_names()
 
-        return [choice for choice in char_list if current_value.lower() in choice.lower()]
+        if len(self._char_list) == 0:
+            self._char_list = self._database.get_all_char_names()
+
+        return [choice for choice in self._char_list if current_value.lower() in choice.lower()]
 
     async def discord_name_autocompletion(
             self,
@@ -40,9 +48,11 @@ class Updates(commands.Cog):
         :return: filtered list
         """
         current_value = ctx.value
-        discord_list = self._helper.get_all_discord_names('display')
 
-        return [choice for choice in discord_list if current_value.lower() in choice.lower()]
+        if len(self._discord_list) == 0:
+            self._discord_list = self._helper.get_all_discord_names('display')
+
+        return [choice for choice in self._discord_list if current_value.lower() in choice.lower()]
 
     async def races_autocompletion(
             self,
@@ -54,8 +64,11 @@ class Updates(commands.Cog):
         :return: filtered list
         """
         current_value = ctx.value
-        races = self._helper.get_races()
-        return [choice for choice in races if current_value.lower() in choice.lower()]
+
+        if len(self._race_list) == 0:
+            self._race_list = self._helper.get_races()
+
+        return [choice for choice in self._race_list if current_value.lower() in choice.lower()]
 
     async def classes_autocompletion(
             self,
@@ -67,8 +80,11 @@ class Updates(commands.Cog):
         :return: filtered list
         """
         current_value = ctx.value
-        classes = self._helper.get_classes()
-        return [choice for choice in classes if current_value.lower() in choice.lower()]
+
+        if len(self._class_list) == 0:
+            self._class_list = self._helper.get_classes()
+
+        return [choice for choice in self._class_list if current_value.lower() in choice.lower()]
 
     async def types_autocompletion(
             self,
@@ -80,8 +96,11 @@ class Updates(commands.Cog):
         :return: filtered list
         """
         current_value = ctx.value
-        types = self._helper.get_types()
-        return [choice for choice in types if current_value.lower() in choice.lower()]
+
+        if len(self._type_list) == 0:
+            self._type_list = self._helper.get_types()
+
+        return [choice for choice in self._type_list if current_value.lower() in choice.lower()]
 
     @discord.slash_command(name="add_character", description="Add a character to the database")
     async def add_character(
