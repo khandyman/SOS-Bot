@@ -203,7 +203,7 @@ class Lookups(commands.Cog):
             )
 
     @discord.slash_command(
-        name="get_all_mains",
+        name="find_all_mains",
         description="Get a list of all mains"
     )
     async def find_all_mains(
