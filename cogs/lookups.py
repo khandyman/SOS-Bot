@@ -2,6 +2,8 @@ import os
 import discord
 from dotenv import load_dotenv
 from discord.ext import commands
+from pyexpat.errors import messages
+
 from classes.database import Database
 from classes.tracker import Tracker
 from classes.helpers import Helpers
@@ -305,12 +307,34 @@ class Lookups(commands.Cog):
         # option_selected = ctx.selected_options[0]['value']
         zone_data = self._tracker.get_zone_respawns(zone_name)
 
+        if (len(zone_data)) > 20:
+            mob_list_one = []
+            mob_list_two = []
+            count = 0
+
+            for mob_data in zone_data:
+                if count < 20:
+                    mob_list_one.append(mob_data)
+                    count += 1
+                else:
+                    mob_list_two.append(mob_data)
+                    count += 1
+
+            message = self._helper.format_mob_message(mob_list_one)
+
+            await ctx.respond(
+                f"```{message}```",
+                ephemeral=True
+            )
+
+            message = self._helper.format_mob_message(mob_list_two)
+        else:
+            message = self._helper.format_mob_message(zone_data)
+
         # if matches found display discord id,
         # then print table of character results
         await ctx.respond(
-            f"```{self._helper.format_mob_message(zone_data)}```",
-            # f"```{mob_name} was killed at: {mob_data[0]['kill_time']}.\n"
-            # f"Mob will respawn at: {mob_data[0]['respawn_time']}.```",
+            f"```{message}```",
             ephemeral=True
         )
 
