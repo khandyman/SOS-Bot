@@ -20,7 +20,7 @@ discord_names = []  # list of Discord names
 intents = discord.Intents.all()
 bot = discord.Bot(intents=intents)
 db = Database()
-helper = Helpers(bot, GUILD)
+# helper = Helpers(bot, GUILD)
 tracker = Tracker()
 
 
@@ -40,7 +40,7 @@ async def on_ready():
     and starts keep alive routine
     :return: none
     """
-    guild = helper.get_guild()
+    guild = discord.utils.get(bot.guilds, name=GUILD)
 
     print(
         f'{bot.user} has connected to the following guild:\n'

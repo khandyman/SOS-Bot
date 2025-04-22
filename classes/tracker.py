@@ -6,7 +6,7 @@ import requests
 
 class Tracker:
     def __init__(self):
-        self._db = Database()
+        self._database = Database()
         self._file_path = "C:\\EQ-ProjectQuarm\\eqlog_Torynmule_pq.proj.txt"
         self._file = open(self._file_path, 'r')
 
@@ -26,7 +26,7 @@ class Tracker:
         format_string = "%Y-%m-%d %H:%M:%S"
         datetime_killtime = datetime.strptime(kill_time, format_string)
 
-        mob_data = self._db.get_mob_data(mob_name)
+        mob_data = self._database.get_mob_data(mob_name)
 
         delta_weeks = int(mob_data[0]['lockout_weeks'])
         delta_days = int(mob_data[0]['lockout_days'])
@@ -97,7 +97,7 @@ class Tracker:
         print(datetime.now().astimezone())
         print(f"{mob_name} | {kill_time} | {respawn_time} | {time_zone}")
 
-        if self._db.update_kill_time(mob_name, kill_time, respawn_time, time_zone):
+        if self._database.update_kill_time(mob_name, kill_time, respawn_time, time_zone):
             kill_message = (
                 f"```{mob_name} was killed at: {kill_time}.\n"
                 f"It will respawn at: {respawn_time}.```"
@@ -110,15 +110,15 @@ class Tracker:
     def update_respawn_times(self, mob_list):
         for mob in mob_list:
             current_respawn = self.scrape_respawn(mob)
-            self._db.update_mob_respawns(mob, current_respawn)
+            self._database.update_mob_respawns(mob, current_respawn)
             print(f"{mob}: {current_respawn}")
 
     def get_mob_respawn(self, mob_name):
-        mob_data = self._db.get_mob_respawn(mob_name)
+        mob_data = self._database.get_mob_respawn(mob_name)
 
         return mob_data
 
     def get_zone_respawns(self, zone_name):
-        zone_data = self._db.get_zone_respawns(zone_name)
+        zone_data = self._database.get_zone_respawns(zone_name)
 
         return zone_data
