@@ -4,7 +4,6 @@ import threading
 import discord  # actually using py-cord instead of discord.py
 from discord.ext.tasks import loop
 from classes.database import Database
-from classes.helpers import Helpers
 from classes.tracker import Tracker
 from dotenv import load_dotenv
 import asyncio
@@ -19,8 +18,7 @@ discord_names = []  # list of Discord names
 # instantiate database and helper classes
 intents = discord.Intents.all()
 bot = discord.Bot(intents=intents)
-db = Database()
-# helper = Helpers(bot, GUILD)
+database = Database()
 tracker = Tracker()
 
 
@@ -40,6 +38,7 @@ async def on_ready():
     and starts keep alive routine
     :return: none
     """
+
     guild = discord.utils.get(bot.guilds, name=GUILD)
 
     print(
@@ -47,7 +46,7 @@ async def on_ready():
         f'{guild.name} (id: {guild.id})'
     )
 
-    keep_alive.start()
+    # keep_alive.start()
     # find_discrepancies(guild)
 
 
@@ -59,13 +58,13 @@ async def keep_alive():
     :return: none
     """
     await bot.wait_until_ready()
-    db.get_all_mains()
+    database.find_all_mains()
     print("Keeping MySQL connection alive.")
     await asyncio.sleep(600)
 
 
 def find_discrepancies(guild):
-    characters = db.get_discord_ids()
+    characters = database.get_discord_ids()
     discrepancies = []
     found = False
 
@@ -89,13 +88,25 @@ def find_discrepancies(guild):
 
 
 def start_bot():
+    """
+    simply start the bot, for use in threads below
+    :return: none
+    """
     bot.run(TOKEN)
 
 
 def start_tracker():
+    """
+    start the follow generator in the tracker class,
+    and handle mob kills detected in log
+    :return: none
+    """
     log_lines = tracker.follow()
 
     for line in log_lines:
+        # if an EQ mob kill is detected in log, parse out
+        # the kill time and mob name, then pass to tracker
+        # class to update database
         if 'Druzzil Ro tells the guild' in line:
             kill_time = tracker.parse_time(line)
             mob_name = tracker.parse_mob(line)
@@ -103,18 +114,17 @@ def start_tracker():
             tracker.update_kill_time(mob_name, kill_time)
 
 
-async def send_message(mob_name, kill_time):
-    general = bot.get_channel(1155966760919511172)
-    await general.send(tracker.update_kill_time(mob_name, kill_time))
-
-
 if __name__ == "__main__":
+    # create bot and tracker threads
     bot_thread = threading.Thread(target=start_bot)
     tracker_thread = threading.Thread(target=start_tracker)
 
+    # start the threads
     bot_thread.start()
     tracker_thread.start()
 
+    # join the threads, so processing duties
+    # correctly alternate between them
     bot_thread.join()
     tracker_thread.join()
 

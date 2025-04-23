@@ -33,7 +33,7 @@ class Database:
 
         return self.execute_read(query)
 
-    def lookup_eq(self, char_name):
+    def lookup_characters(self, char_name):
         """
         Get all character details that share the same discord id and match
         the char name entered, sorted by the priority level of the chars
@@ -49,19 +49,7 @@ class Database:
 
         return self.execute_read(query)
 
-    # def lookup_discord(self, discord_id):
-    #     """
-    #     Get all chars for a given discord id
-    #     :return: results of the query, in list form
-    #     """
-    #     query = (
-    #         "SELECT char_name, char_race, char_class, char_type, char_priority FROM sos_bot.characters"
-    #         f" WHERE discord_id = '{discord_id}' ORDER BY char_priority ASC"
-    #     )
-    #
-    #     return self.execute_read(query)
-
-    def lookup_main(self, discord_id):
+    def find_main_from_discord(self, discord_id):
         """
         Get main character for a given discord id
         :discord_id: discord id to look up
@@ -87,7 +75,7 @@ class Database:
 
         return self.execute_read(query)
 
-    def get_all_mains(self):
+    def find_all_mains(self):
         """
         Get all chars flagged as mains
         :return: results of the select query, in list form
@@ -140,19 +128,40 @@ class Database:
         return self.get_list(self.execute_read(query), 'mob_zone')
 
     def get_mob_data(self, mob_name):
+        """
+        obtain all fields of a mob's database entry
+        :param mob_name: string
+        :return: results of the select query, in list form
+        """
         query = f"SELECT * FROM sos_bot.respawns WHERE mob_name = '{mob_name}'"
 
         return self.execute_read(query)
 
     def get_mob_respawn(self, mob_name):
+        """
+        get the kill, respawn, and time zone data for a mob
+        :param mob_name: string
+        :return: results of the select query, in list form
+        """
         query = (f"SELECT mob_name, kill_time, respawn_time, time_zone FROM sos_bot.respawns "
                  f"WHERE mob_name = '{mob_name}'")
 
         return self.execute_read(query)
 
     def get_zone_respawns(self, zone_name):
+        """
+        obtain all fields of each mob's database entry for a given zone
+        :param zone_name: string
+        :return: results of the select query, in list form
+        """
+        # special processing to handle single quotes in zone names
+        # single quotes are invalid in SQL queries
         find_quote = zone_name.find("'")
 
+        # if a single quote was found, insert an additional
+        # single quote into the SQL string at the position
+        # of the existing quote, this escapes the quote,
+        # allowing the query string to go through as valid
         if find_quote != -1:
             temp_zone = zone_name
             zone_name = temp_zone[:find_quote] + "'" + temp_zone[find_quote:]
@@ -224,6 +233,15 @@ class Database:
         return self.execute_update(query)
 
     def update_kill_time(self, mob_name, kill_time, respawn_time, time_zone):
+        """
+        edit database entry for a given mob with new kill time,
+        respawn time, and time zone
+        :param mob_name: string
+        :param kill_time: datetime in string format
+        :param respawn_time: datetime in string format
+        :param time_zone: string
+        :return: results of the update query, in list form
+        """
         query = (
             f"UPDATE sos_bot.respawns SET kill_time = '{kill_time}', respawn_time = '{respawn_time}', "
             f"time_zone = '{time_zone}' WHERE mob_name = '{mob_name}'"
@@ -231,18 +249,29 @@ class Database:
 
         return self.execute_update(query)
 
-    def update_mob_respawns(self, mob_name, respawn_dict):
+    def update_mob_respawn(self, mob_name, respawn_dict):
+        """
+        edit the database entry for a mob with respawn timer data
+        :param mob_name: string
+        :param respawn_dict: dictionary of int values, with keys corresponding to units of time
+        :return: results of the update query, in list form
+        """
         query = (
             f"UPDATE sos_bot.respawns SET lockout_weeks = '{respawn_dict['weeks']}', "
             f"lockout_days = '{respawn_dict['days']}', lockout_hours = '{respawn_dict['hours']}', "
             f"lockout_minutes = '{respawn_dict['minutes']}' "
             f"WHERE mob_name = '{mob_name}'"
         )
-        print(query)
+
         return self.execute_update(query)
 
     ################# UTILITY METHODS #################
-    def open_connection(self):
+    def create_engine(self):
+        """
+        create a new engine object upon request, to prevent
+        MySQL server from timing out
+        :return: SQL alchemy engine object
+        """
         # create the query engine
         return create_engine(self._params)
 
@@ -257,7 +286,7 @@ class Database:
 
         # open a connection to database, dynamically close
         # it when with block closes
-        with self.open_connection().connect() as conn:
+        with self.create_engine().connect() as conn:
             result = conn.execute(text(query))
 
             # get query results and, line by line,
@@ -280,7 +309,7 @@ class Database:
         """
         # open a connection to database, dynamically close
         # it when with block closes
-        with self.open_connection().connect() as conn:
+        with self.create_engine().connect() as conn:
             # get a count of rows affected, to act as
             # indicator of success or failure
             result = conn.execute(text(query)).rowcount

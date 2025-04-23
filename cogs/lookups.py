@@ -2,7 +2,6 @@ import os
 import discord
 from dotenv import load_dotenv
 from discord.ext import commands
-from pyexpat.errors import messages
 
 from classes.database import Database
 from classes.tracker import Tracker
@@ -109,7 +108,7 @@ class Lookups(commands.Cog):
         :param member_name: string selected by user (required)
         :return: none
         """
-        # # this slash command available to all users
+        # # this slash command available to all members
         target_role = discord.utils.get(ctx.guild.roles, name="Seeker")
 
         # if validate_role returns false, user is not authorized,
@@ -126,7 +125,7 @@ class Lookups(commands.Cog):
         user_choice = member_name[2:bracket - 1]
 
         # get the list of chars from database
-        results = self._database.lookup_eq(user_choice)
+        results = self._database.lookup_characters(user_choice)
         # get discord name that matches discord id from database
         discord_name = self._helper.get_discord_name(
             self._database.lookup_discord_id(user_choice)
@@ -168,7 +167,7 @@ class Lookups(commands.Cog):
         :param discord_name: string selected from dropdown (required)
         :return: none
         """
-        # this slash command available to all users
+        # this slash command available to all members
         target_role = discord.utils.get(ctx.guild.roles, name="Seeker")
 
         # if validate_role returns false, user is not authorized,
@@ -190,7 +189,7 @@ class Lookups(commands.Cog):
             )
             return
 
-        results = self._database.lookup_main(discord_id)
+        results = self._database.find_main_from_discord(discord_id)
 
         # if results > 0, match was found
         if len(results) > 0:
@@ -228,7 +227,7 @@ class Lookups(commands.Cog):
 
         self._helper.log_activity(ctx.author, ctx.command, ctx.selected_options)
 
-        results = self._database.get_all_mains()
+        results = self._database.find_all_mains()
         main_list = f"Main characters in Seekers Of Souls...\n"
 
         # print one character per line
@@ -255,7 +254,13 @@ class Lookups(commands.Cog):
                 autocomplete=mob_list_autocompletion
             )
     ):
-        # this slash command available to all users
+        """
+        get mob kill and respawn times from database
+        :param ctx: the application context of the bot
+        :param mob_name: string selected from dropdown (required)
+        :return: none
+        """
+        # this slash command available to all members
         target_role = discord.utils.get(ctx.guild.roles, name="Seeker")
 
         # if validate_role returns false, user is not authorized,
@@ -266,16 +271,20 @@ class Lookups(commands.Cog):
 
         self._helper.log_activity(ctx.author, ctx.command, ctx.selected_options)
 
-        # obtain the user's selection and get just the string name
-        # option_selected = ctx.selected_options[0]['value']
+        # get mob fields from database using selected mob
         mob_data = self._tracker.get_mob_respawn(mob_name)
 
-        # if matches found display discord id,
-        # then print table of character results
+        # if no match found in database, inform user and exit
+        if len(mob_data) == 0:
+            await ctx.respond(
+                f"```No entry in database for {mob_name}```",
+                ephemeral=True
+            )
+            return
+
+        # if match is found display results to user
         await ctx.respond(
             f"```{self._helper.format_mob_message(mob_data)}```",
-            # f"```{mob_name} was killed at: {mob_data[0]['kill_time']}.\n"
-            # f"Mob will respawn at: {mob_data[0]['respawn_time']}.```",
             ephemeral=True
         )
 
@@ -292,7 +301,13 @@ class Lookups(commands.Cog):
                 autocomplete=zone_list_autocompletion
             )
     ):
-        # this slash command available to all users
+        """
+        get all mob kills and respawn times from database for a zone
+        :param ctx: the application context of the bot
+        :param zone_name: string selected from dropdown (required)
+        :return: none
+        """
+        # this slash command available to all members
         target_role = discord.utils.get(ctx.guild.roles, name="Seeker")
 
         # if validate_role returns false, user is not authorized,
@@ -303,36 +318,48 @@ class Lookups(commands.Cog):
 
         self._helper.log_activity(ctx.author, ctx.command, ctx.selected_options)
 
-        # obtain the user's selection and get just the string name
-        # option_selected = ctx.selected_options[0]['value']
+        # get mob fields from database using selected mob
         zone_data = self._tracker.get_zone_respawns(zone_name)
 
+        # an ugly bit of additional logic to break up messages longer than 2k
+        # characters because of a Discord limitation on message size
+        # send up to 20 mobs in a single message; anything over 20 send
+        # as an additional ctx response (so far the only zone that
+        # exceeds this limit is Temple of Veeshan
         if (len(zone_data)) > 20:
+            # set up two mob lists
             mob_list_one = []
             mob_list_two = []
+            # start a counter
             count = 0
 
             for mob_data in zone_data:
+                # add to mob list one while counter is < 20
                 if count < 20:
                     mob_list_one.append(mob_data)
                     count += 1
+                # add to mob list two while counter is >= 20
                 else:
                     mob_list_two.append(mob_data)
                     count += 1
 
+            # format first mob list for ctx respond
             message = self._helper.format_mob_message(mob_list_one)
 
+            # send to Discord
             await ctx.respond(
                 f"```{message}```",
                 ephemeral=True
             )
 
+            # format second mob list for ctx respond
             message = self._helper.format_mob_message(mob_list_two)
+        # if < 20 mobs in zone, just process normally
         else:
             message = self._helper.format_mob_message(zone_data)
 
-        # if matches found display discord id,
-        # then print table of character results
+        # print either mob_list_two or zone_data, depending
+        # on whether above logic was triggered
         await ctx.respond(
             f"```{message}```",
             ephemeral=True

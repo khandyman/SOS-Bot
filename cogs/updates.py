@@ -369,6 +369,11 @@ class Updates(commands.Cog):
             self,
             ctx: discord.ApplicationContext,
     ):
+        """
+        Sync the respawn times in the database with the Quarm database
+        :param ctx: the application context of the bot
+        :return: none
+        """
         # this slash command only available to officers
         target_role = discord.utils.get(ctx.guild.roles, name="Officer")
 
@@ -380,15 +385,20 @@ class Updates(commands.Cog):
 
         self._helper.log_activity(ctx.author, ctx.command, ctx.selected_options)
 
+        # this is a moderately long process, so inform user
         await ctx.respond(
             "```Updating all mob respawn times. This will take a while.\n"
             "Please be patient...```",
             ephemeral=True
         )
 
+        # obtain databse mob list
         mob_list = self._database.get_all_mob_names()
+
+        # run tracker update method; does not return anything
         self._tracker.update_respawn_times(mob_list)
 
+        # notify user process is complete
         await ctx.respond(
             "```Database mob respawn time update is complete.```",
             ephemeral=True

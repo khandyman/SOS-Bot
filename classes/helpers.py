@@ -52,11 +52,13 @@ class Helpers:
         """
         Format database results into table format
         :param results: list of dictionary entries;
-        each item is a different character
+        each item is a different mob
         :return: formatted string
         """
         headers = "Mob Killed Respawning".split()
         row = "{:<30} {:<20} {:<20} \n"       # set column widths
+        # set time zone to null value, in case no
+        # time zones exist in results list
         time_zone = None
 
         message = row.format(*headers)
@@ -70,6 +72,8 @@ class Helpers:
                 str(result['respawn_time'])
             )
 
+            # update time zone if a valid time zone
+            # exists in the current dict
             if result['kill_time'] is not None:
                 time_zone = result['time_zone']
 
