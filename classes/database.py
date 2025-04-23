@@ -20,9 +20,6 @@ class Database:
         # set connection string
         self._params = f"mysql+pymysql://{self._MYSQL_USER}:{self._MYSQL_PASSWORD}@{self._MYSQL_HOST}/{self._MYSQL_DB}?charset=utf8mb4"
 
-        # create the query engine
-        self._engine = create_engine(self._params)
-
     ################# READ METHODS #################
     def get_discord_ids(self):
         """
@@ -245,6 +242,10 @@ class Database:
         return self.execute_update(query)
 
     ################# UTILITY METHODS #################
+    def open_connection(self):
+        # create the query engine
+        return create_engine(self._params)
+
     def execute_read(self, query):
         """
         Send a read query to database engine
@@ -256,7 +257,7 @@ class Database:
 
         # open a connection to database, dynamically close
         # it when with block closes
-        with self._engine.connect() as conn:
+        with self.open_connection().connect() as conn:
             result = conn.execute(text(query))
 
             # get query results and, line by line,
@@ -279,7 +280,7 @@ class Database:
         """
         # open a connection to database, dynamically close
         # it when with block closes
-        with self._engine.connect() as conn:
+        with self.open_connection().connect() as conn:
             # get a count of rows affected, to act as
             # indicator of success or failure
             result = conn.execute(text(query)).rowcount
