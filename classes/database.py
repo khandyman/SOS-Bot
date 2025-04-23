@@ -166,7 +166,7 @@ class Database:
             temp_zone = zone_name
             zone_name = temp_zone[:find_quote] + "'" + temp_zone[find_quote:]
 
-        query = (f"SELECT mob_name, kill_time, respawn_time, time_zone FROM sos_bot.respawns "
+        query = (f"SELECT mob_name, mob_zone, kill_time, respawn_time, time_zone FROM sos_bot.respawns "
                  f"WHERE mob_zone = '{zone_name}'")
 
         return self.execute_read(query)

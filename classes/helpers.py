@@ -61,7 +61,8 @@ class Helpers:
         # time zones exist in results list
         time_zone = None
 
-        message = row.format(*headers)
+        message = f"Mob respawn data for: {results[0]['mob_zone']}\n\n"
+        message = message + row.format(*headers)
         message = message + "-" * 71 + "\n"         # add a separator
 
         for result in results:
