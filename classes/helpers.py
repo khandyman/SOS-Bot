@@ -48,20 +48,24 @@ class Helpers:
 
         return message
 
-    def format_mob_message(self, results):
+    def format_mob_message(self, results, command):
         """
         Format database results into table format
         :param results: list of dictionary entries;
+        :param command: string, mob or zone
         each item is a different mob
         :return: formatted string
         """
+        message = ""
         headers = "Mob Killed Respawning".split()
         row = "{:<30} {:<20} {:<20} \n"       # set column widths
         # set time zone to null value, in case no
         # time zones exist in results list
         time_zone = None
 
-        message = f"Mob respawn data for: {results[0]['mob_zone']}\n\n"
+        if command == "zone":
+            message = f"Mob respawn data for: {results[0]['mob_zone']}\n\n"
+
         message = message + row.format(*headers)
         message = message + "-" * 71 + "\n"         # add a separator
 

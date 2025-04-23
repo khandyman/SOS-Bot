@@ -284,7 +284,7 @@ class Lookups(commands.Cog):
 
         # if match is found display results to user
         await ctx.respond(
-            f"```{self._helper.format_mob_message(mob_data)}```",
+            f"```{self._helper.format_mob_message(mob_data, "mob")}```",
             ephemeral=True
         )
 
@@ -344,7 +344,7 @@ class Lookups(commands.Cog):
                     count += 1
 
             # format first mob list for ctx respond
-            message = self._helper.format_mob_message(mob_list_one)
+            message = self._helper.format_mob_message(mob_list_one, "zone")
 
             # send to Discord
             await ctx.respond(
@@ -353,10 +353,10 @@ class Lookups(commands.Cog):
             )
 
             # format second mob list for ctx respond
-            message = self._helper.format_mob_message(mob_list_two)
+            message = self._helper.format_mob_message(mob_list_two, "zone")
         # if < 20 mobs in zone, just process normally
         else:
-            message = self._helper.format_mob_message(zone_data)
+            message = self._helper.format_mob_message(zone_data, "zone")
 
         # print either mob_list_two or zone_data, depending
         # on whether above logic was triggered
