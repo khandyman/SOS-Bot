@@ -183,6 +183,7 @@ class Tracker:
 
         # get the respawn time from the calculate respawn method
         respawn_time = self.calculate_respawn(mob_name, kill_time)
+
         # get the time zone of the PC the mule is logged in on
         time_zone = datetime.now().astimezone().tzname()
 

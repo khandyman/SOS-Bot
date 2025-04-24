@@ -1,5 +1,5 @@
 import discord
-import datetime
+from datetime import datetime
 
 
 class Helpers:
@@ -70,11 +70,17 @@ class Helpers:
         message = message + "-" * 71 + "\n"         # add a separator
 
         for result in results:
+            # check if mob is already up
+            respawn_time = self.compare_times(result['respawn_time'])
+
+            # replace kill_time None with better messaging
+            kill_time = self.check_kill_time(result['kill_time'])
+
             # for each mob, arrange them in the correct order
             message = message + row.format(
                 str(result['mob_name']),
-                str(result['kill_time']),
-                str(result['respawn_time'])
+                str(kill_time),
+                str(respawn_time)
             )
 
             # update time zone if a valid time zone
@@ -86,6 +92,39 @@ class Helpers:
 
         return message
 
+    def check_kill_time(self, kill_time):
+        """
+        Format kill_time if None
+        :param kill_time: string
+        :return: string
+        """
+        if kill_time is None:
+            kill_time = "No Kill Data"
+
+        return kill_time
+
+    def compare_times(self, database_time):
+        """
+        Compare respawn time with current time to determine
+        if mob is up or not
+        :param database_time: string, respawn time
+        :return: string, respawn time, either altered or passed through
+        """
+        if database_time is None:
+            return "UP NOW!"
+
+        format_string = "%Y-%m-%d %H:%M:%S"
+        # get current time
+        now_time = datetime.now()
+        # convert to datetime object
+        respawn_time = datetime.strptime(database_time, format_string)
+
+        # compare the two
+        if now_time >= respawn_time:
+            database_time = "UP NOW!"
+
+        return database_time
+
     @staticmethod
     def log_activity(user, command, entries):
         """
@@ -96,7 +135,7 @@ class Helpers:
         :return: none
         """
         # begin the log string that will be written to log file
-        log_string = f"{datetime.datetime.now()} - {user} - {command}"
+        log_string = f"{datetime.now()} - {user} - {command}"
 
         # if command had options to select
         if entries is not None:
