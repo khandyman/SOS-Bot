@@ -127,15 +127,15 @@ class Database:
 
         return self.get_list(self.execute_read(query), 'mob_zone')
 
-    def get_mob_data(self, mob_name):
-        """
-        obtain all fields of a mob's database entry
-        :param mob_name: string
-        :return: results of the select query, in list form
-        """
-        query = f"SELECT * FROM sos_bot.respawns WHERE mob_name = '{mob_name}'"
-
-        return self.execute_read(query)
+    # def get_mob_data(self, mob_name):
+    #     """
+    #     obtain all fields of a mob's database entry
+    #     :param mob_name: string
+    #     :return: results of the select query, in list form
+    #     """
+    #     query = f"SELECT * FROM sos_bot.respawns WHERE mob_name = '{mob_name}'"
+    #
+    #     return self.execute_read(query)
 
     def get_mob_respawn(self, mob_name):
         """
@@ -229,23 +229,6 @@ class Database:
         :return: results of the delete query, in list form
         """
         query = f"DELETE FROM sos_bot.characters WHERE char_name = '{char_name}'"
-
-        return self.execute_update(query)
-
-    def update_kill_time(self, mob_name, kill_time, respawn_time, time_zone):
-        """
-        edit database entry for a given mob with new kill time,
-        respawn time, and time zone
-        :param mob_name: string
-        :param kill_time: datetime in string format
-        :param respawn_time: datetime in string format
-        :param time_zone: string
-        :return: results of the update query, in list form
-        """
-        query = (
-            f"UPDATE sos_bot.respawns SET kill_time = '{kill_time}', respawn_time = '{respawn_time}', "
-            f"time_zone = '{time_zone}' WHERE mob_name = '{mob_name}'"
-        )
 
         return self.execute_update(query)
 
