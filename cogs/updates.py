@@ -102,6 +102,21 @@ class Updates(commands.Cog):
 
         return [choice for choice in self._type_list if current_value.lower() in choice.lower()]
 
+    def add_member(
+            self,
+            discord_id
+    ):
+        try:
+            if self._database.insert_member(discord_id) > 0:
+                return True
+            else:
+                return False
+        except Exception as err:
+            if "Duplicate entry" in str(err):
+                return True
+            else:
+                return False
+
     @discord.slash_command(name="add_character", description="Add a character to the database")
     async def add_character(
             self,
@@ -166,6 +181,13 @@ class Updates(commands.Cog):
             await ctx.respond(
                 f"```Discord ID not found for {discord_name}.\n"
                 "Characters must have a valid Discord ID.```",
+                ephemeral=True
+            )
+            return
+
+        if self.add_member(discord_id) is False:
+            await ctx.respond(
+                f"```Problem inserting discord id into database.```",
                 ephemeral=True
             )
             return
@@ -318,6 +340,27 @@ class Updates(commands.Cog):
             ephemeral=True
         )
 
+    def delete_member(self, discord_id):
+        """
+        Delete a member from the database
+        :param discord_id: the discord_id to check
+        :return: boolean
+        """
+        # count the number of discord_ids left in characters table
+        num_ids = len(self._database.count_ids(discord_id))
+
+        # if at least one character left, return True
+        if num_ids > 0:
+            return True
+
+        # if no more characters left for discord_id, we need
+        # to delete discord_id from members table, return True
+        # if delete successful, otherwise return False
+        if self._database.delete_member(discord_id) > 0:
+            return True
+        else:
+            return False
+
     @discord.slash_command(name="delete_character", description="Delete a character")
     async def delete_character(
             self,
@@ -345,19 +388,30 @@ class Updates(commands.Cog):
 
         self._helper.log_activity(ctx.author, ctx.command, ctx.selected_options)
 
-        results = self._database.delete_character(char_name)
-        row = self._helper.get_row(results)
+        # get discord_id before character is deleted
+        discord_id = self._database.lookup_discord_id(char_name)[0]['discord_id']
 
-        # if results > 0 then query was successful
+        # delete character from database
+        char_results = self._database.delete_character(char_name)
+        row = self._helper.get_row(char_results)
+
+        # get results of delete_member function
+        member_results = self.delete_member(discord_id)
+
+        # if char_results > 0 then query was successful
         # i.e., character was deleted
-        if results > 0:
-            message = f"You deleted: {char_name}"
+        # if member_results is True then either more than
+        # one character for given discord_id left in
+        # characters table, or this was last character
+        # and discord_id was deleted from members table
+        if char_results > 0 and member_results is True:
+            message = f"You deleted: {char_name}."
         else:
-            message = f"{char_name} not found"
+            message = f"There was a problem deleting {char_name}."
 
         await ctx.respond(
             f"```{message}."
-            f"\n{results} {row} deleted from database.```",
+            f"\n{char_results} {row} deleted from database.```",
             ephemeral=True
         )
 

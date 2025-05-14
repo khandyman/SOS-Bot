@@ -69,8 +69,34 @@ class Database:
         :return: results of the select query, in list form
         """
         query = (
-            "SELECT discord_id from sos_bot.characters WHERE "
+            "SELECT discord_id from sos_bot.characters WHERE"
             f" char_name = '{char_name}'"
+        )
+
+        return self.execute_read(query)
+
+    def count_ids(self, discord_id):
+        """
+        Get list from discord ids from characters table
+        :discord_id: the id to lookup
+        :return: results of the select query, in list form
+        """
+        query = (
+            "SELECT discord_id from sos_bot.characters WHERE "
+            f" discord_id = '{discord_id}'"
+        )
+
+        return self.execute_read(query)
+
+    def find_member(self, discord_id):
+        """
+        Get match from members table for a given discord id
+        :discord_id: the id to lookup
+        :return: results of the select query, in list form
+        """
+        query = (
+            "SELECT discord_id from sos_bot.members WHERE "
+            f" discord_id = '{discord_id}'"
         )
 
         return self.execute_read(query)
@@ -186,6 +212,19 @@ class Database:
 
         return self.execute_update(query)
 
+    def insert_member(self, discord_id):
+        """
+                Add a new discord_id to the members table
+                :parameters: discord_id
+                :return: results of the insert query
+                """
+        # print(discord_id)
+        query = (
+            f"INSERT INTO sos_bot.members (discord_id) VALUES ('{discord_id}')"
+        )
+
+        return self.execute_update(query)
+
     def update_character(self, char_name, new_name, char_race, char_class, char_type):
         """
         Edit an existing character to have new attributes
@@ -229,6 +268,16 @@ class Database:
         :return: results of the delete query, in list form
         """
         query = f"DELETE FROM sos_bot.characters WHERE char_name = '{char_name}'"
+
+        return self.execute_update(query)
+
+    def delete_member(self, discord_id):
+        """
+        Remove discord id from database
+        :discord_id: string, the id to delete
+        :return: results of the delete query, in list form
+        """
+        query = f"DELETE FROM sos_bot.members WHERE discord_id = '{discord_id}'"
 
         return self.execute_update(query)
 
