@@ -34,8 +34,7 @@ class Lookups(commands.Cog):
         """
         current_value = ctx.value
 
-        if len(self._discord_list) == 0:
-            self._discord_list = self._helper.get_all_discord_names('name')
+        self._discord_list = self._helper.get_all_discord_names('name')
 
         return [choice for choice in self._discord_list if current_value.lower() in choice.lower()]
 
@@ -50,9 +49,8 @@ class Lookups(commands.Cog):
         """
         current_value = ctx.value
 
-        if len(self._name_list) == 0:
-            self._name_list = self._helper.get_combined_names(self._database.get_all_characters())
-            self._name_list.sort()
+        self._name_list = self._helper.get_combined_names(self._database.get_all_characters())
+        self._name_list.sort()
 
         return [choice for choice in self._name_list if current_value.lower() in choice.lower()]
 

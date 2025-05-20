@@ -33,8 +33,7 @@ class Updates(commands.Cog):
         """
         current_value = ctx.value
 
-        if len(self._char_list) == 0:
-            self._char_list = self._database.get_all_char_names()
+        self._char_list = self._database.get_all_char_names()
 
         return [choice for choice in self._char_list if current_value.lower() in choice.lower()]
 
@@ -49,8 +48,7 @@ class Updates(commands.Cog):
         """
         current_value = ctx.value
 
-        if len(self._discord_list) == 0:
-            self._discord_list = self._helper.get_all_discord_names('display')
+        self._discord_list = self._helper.get_all_discord_names('display')
 
         return [choice for choice in self._discord_list if current_value.lower() in choice.lower()]
 
@@ -174,8 +172,9 @@ class Updates(commands.Cog):
         # the discord id for the provided discord name exists
         # i.e., have any characters ever been entered for this
         # discord user
+        print(f"discord name entered: {discord_name}")
         discord_id = self._helper.get_discord_id(discord_name, 'display')
-
+        print(f"discord_id returned: {discord_id}")
         # if no discord id in database, notify user and exit
         if discord_id == "":
             await ctx.respond(
