@@ -131,20 +131,17 @@ class Updates(commands.Cog):
             char_race: discord.Option(
                 str,
                 description='EverQuest character race',
-                autocomplete=races_autocompletion,
-                required=False
+                autocomplete=races_autocompletion
             ),
             char_class: discord.Option(
                 str,
                 description='EverQuest character class',
-                autocomplete=classes_autocompletion,
-                required=False
+                autocomplete=classes_autocompletion
             ),
             char_type: discord.Option(
                 str,
                 description='EverQuest character type',
-                autocomplete=types_autocompletion,
-                required=False
+                autocomplete=types_autocompletion
             )
     ):
         """
