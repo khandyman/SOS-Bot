@@ -282,6 +282,7 @@ class Helpers:
                 'Iksar',
                 'Ogre',
                 'Troll',
+                'Vah Shir',
                 'Wood Elf'
             ]
 
